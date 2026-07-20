@@ -1,0 +1,51 @@
+[
+  {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "A blog where I infrequently post performance analyses of gitoxide",
+    "section": "",
+    "text": "gix-blame performance March 2026 through July 2026\n\n\n\ncode\n\nanalysis\n\n\n\n\n\n\n\n\n\nJul 19, 2026\n\n\nChristoph Rüßler\n\n\n\n\n\nNo matching items"
+  },
+  {
+    "objectID": "posts/gix-blame-march-2026-through-july-2026/index.html",
+    "href": "posts/gix-blame-march-2026-through-july-2026/index.html",
+    "title": "gix-blame performance March 2026 through July 2026",
+    "section": "",
+    "text": "This is the first post in a new blog in which I plan to infrequently post performance analyses related to gitoxide. This post is largely a port of existing code I used in two previous blog posts (one measuring the difference between using imara-diff 0.1 and 0.2, another one measuring the effects of optimizing tree diffing by skipping identical subtrees), and it mainly exists to exercise the new publishing pipeline. The reason I’m now starting this separate blog is that my main blog runs on Jekyll which is not as well suited to the kinds of analyses that I want to work on from time to time as Quarto which is the software behind this new blog.\nIn this post, I’m going to compare gix blame at commit e63d487fb (from February 16, 2026) with gix blame at commit 9949e9fdf (from July 19, 2026) (the latter chosen because it happened to be HEAD when I started writing this post). Specifically, I’m going to compare the performance of gix blame on the same set of 9 files that I used for the benchmarks of my earlier posts."
+  },
+  {
+    "objectID": "posts/gix-blame-march-2026-through-july-2026/index.html#running-the-benchmark",
+    "href": "posts/gix-blame-march-2026-through-july-2026/index.html#running-the-benchmark",
+    "title": "gix-blame performance March 2026 through July 2026",
+    "section": "Running the benchmark",
+    "text": "Running the benchmark\nAfter compiling both executables with cargo build --release --locked, I ran the following script to collect some data using hyperfine.\nenv GIT_DIR=\"$HOME/github/Byron/gitoxide/.git\" BASELINE_EXECUTABLE=\"$HOME/bin/gix-2026-07-20-e63d487fb\" COMPARISON_EXECUTABLE=\"$HOME/bin/gix-2026-07-20-9949e9fdf\" ./run_benchmark.py\n\n\nrun_benchmark.py, the script used to benchmark both versions of gix blame\n#!/usr/bin/env python\n# /// script\n# requires-python = \"&gt;=3.13\"\n# ///\n\nimport os\n\ndef run(path, i):\n    os.system(\n        f'hyperfine --parameter-list command \"$BASELINE_EXECUTABLE\",\"$COMPARISON_EXECUTABLE\" --parameter-list path {path} \"{{command}} blame {{path}}\" --command-name baseline --command-name comparison --export-json benchmark-{i}.json'\n    )\n\nfor i, path in enumerate(\n    [\n        \"CHANGELOG.md\",\n        \"STABILITY.md\",\n        \"README.md\",\n        \"Cargo.toml\",\n        \"gix-blame/src/file/function.rs\",\n        \"gix-path/src/env/mod.rs\",\n        \"gix-index/tests/index/file/write.rs\",\n        \"gix-object/src/lib.rs\",\n        \"gix-odb/src/store_impls/loose/write.rs\",\n    ]\n):\n    run(path, i + 1)\n\n\nThis will create a couple of Markdown files, benchmark-1.json through benchmark-9.json."
+  },
+  {
+    "objectID": "posts/gix-blame-march-2026-through-july-2026/index.html#analyzing-the-data",
+    "href": "posts/gix-blame-march-2026-through-july-2026/index.html#analyzing-the-data",
+    "title": "gix-blame performance March 2026 through July 2026",
+    "section": "Analyzing the data",
+    "text": "Analyzing the data\nThen, in order to work with these files, we’re going to use numpy and pandas to load them into data.\n\n\nA few helper functions for loading the data\nimport numpy as np\nimport pandas as pd\n\nimport matplotlib as mpl\n\nimport seaborn as sns\n\nimport json\n\ndef load_results(filename):\n    with open(filename) as f:\n        return json.load(f)[\"results\"]\n\ndef extract_data_points(result):\n    command = result[\"command\"]\n    path = result[\"parameters\"][\"path\"]\n\n    return {\"command\": command, \"path\": path, \"time\": result[\"times\"]}\n\n\n\nfilenames = [f\"benchmark-{i}.json\" for i in range(1, 10)]\nresults = [load_results(filename) for filename in filenames]\nresults = [extract_data_points(result) for result in np.concatenate(results)]\n\ndata = pd.concat(\n    [pd.DataFrame(result) for result in results],\n    ignore_index=True,\n)\n\nAnd finally, we’re going to create 2 plots that will give us an idea of how both versions of gix blame compare with respect to performance. Looking in particular at the boxplot, it seems that performance slightly regressed between March and July. I don’t know yet whether this is due to a particular change, and the effect is really small, so I’m not sure yet whether I’m going to investigate this in depth."
+  },
+  {
+    "objectID": "posts/gix-blame-march-2026-through-july-2026/index.html#creating-a-boxplot",
+    "href": "posts/gix-blame-march-2026-through-july-2026/index.html#creating-a-boxplot",
+    "title": "gix-blame performance March 2026 through July 2026",
+    "section": "Creating a boxplot",
+    "text": "Creating a boxplot\n\n\nCode\nFIGURE_WIDTH = 8\nFIGURE_ASPECT = 1.6\n\nsns.set_theme(\n    palette=\"Paired\",\n    rc={\"figure.figsize\": (FIGURE_WIDTH, FIGURE_WIDTH / FIGURE_ASPECT)},\n)\n\n\n\nboxplot = sns.boxplot(x=\"time\", y=\"path\", hue=\"command\", data=data)\nsns.despine(offset=10, trim=True)\nmpl.pyplot.tight_layout()\nmpl.pyplot.show()"
+  },
+  {
+    "objectID": "posts/gix-blame-march-2026-through-july-2026/index.html#creating-a-catplot",
+    "href": "posts/gix-blame-march-2026-through-july-2026/index.html#creating-a-catplot",
+    "title": "gix-blame performance March 2026 through July 2026",
+    "section": "Creating a catplot",
+    "text": "Creating a catplot\n\ncatplot = sns.catplot(\n    x=\"time\",\n    y=\"path\",\n    hue=\"command\",\n    legend_out=False,\n    height=FIGURE_WIDTH / FIGURE_ASPECT,\n    aspect=FIGURE_ASPECT,\n    data=data,\n)\n\nmpl.pyplot.show()"
+  },
+  {
+    "objectID": "about.html",
+    "href": "about.html",
+    "title": "About",
+    "section": "",
+    "text": "I created this blog as a place to infrequently post performance analyses of gitoxide. My main blog lives at https://c.rubler.net/blog."
+  }
+]

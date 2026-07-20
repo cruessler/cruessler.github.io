@@ -1,0 +1,430 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss  xmlns:atom="http://www.w3.org/2005/Atom" 
+      xmlns:media="http://search.yahoo.com/mrss/" 
+      xmlns:content="http://purl.org/rss/1.0/modules/content/" 
+      xmlns:dc="http://purl.org/dc/elements/1.1/" 
+      version="2.0">
+<channel>
+<title>Performance analyses of gitoxide</title>
+<link>https://cruessler.github.io/</link>
+<atom:link href="https://cruessler.github.io/index.xml" rel="self" type="application/rss+xml"/>
+<description>A blog where I infrequently post performance analyses of gitoxide</description>
+<generator>quarto-1.9.38</generator>
+<lastBuildDate>Sun, 19 Jul 2026 00:00:00 GMT</lastBuildDate>
+<item>
+  <title>gix-blame performance March 2026 through July 2026</title>
+  <dc:creator>Christoph Rüßler</dc:creator>
+  <link>https://cruessler.github.io/posts/gix-blame-march-2026-through-july-2026/</link>
+  <description><![CDATA[ 
+
+
+
+
+
+<p>This is the first post in a new blog in which I plan to infrequently post performance analyses related to <a href="https://github.com/GitoxideLabs/gitoxide.git"><code>gitoxide</code></a>. This post is largely a port of existing code I used in two previous blog posts (<a href="https://c.rubler.net/blog/2026/01/25/gix-blame-performance-with-imara-diff-0-1-and-0-2.html">one measuring the difference between using <code>imara-diff</code> 0.1 and 0.2</a>, <a href="https://c.rubler.net/blog/2026/03/14/gix-blame-performance-improved-by-a-change-in-gix-diff.html">another one measuring the effects of optimizing tree diffing by skipping identical subtrees</a>), and it mainly exists to exercise the new publishing pipeline. The reason I’m now starting this separate blog is that my main blog runs on Jekyll which is not as well suited to the kinds of analyses that I want to work on from time to time as Quarto which is the software behind this new blog.</p>
+<p>In this post, I’m going to compare <code>gix blame</code> at commit <a href="https://github.com/GitoxideLabs/gitoxide/commit/e63d487fb1b1425a9458fc7400517ad2c0280fd2"><code>e63d487fb</code> (from February 16, 2026)</a> with <code>gix blame</code> at commit <a href="https://github.com/GitoxideLabs/gitoxide/commit/9949e9fdfa27a6630a8a12f7da07cbdd5c03aeed"><code>9949e9fdf</code> (from July 19, 2026)</a> (the latter chosen because it happened to be <code>HEAD</code> when I started writing this post). Specifically, I’m going to compare the performance of <code>gix blame</code> on the same set of 9 files that I used for the benchmarks of my earlier posts.</p>
+<section id="running-the-benchmark" class="level2">
+<h2 class="anchored" data-anchor-id="running-the-benchmark">Running the benchmark</h2>
+<p>After compiling both executables with <code>cargo build --release --locked</code>, I ran the following script to collect some data using <code>hyperfine</code>.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">env</span> GIT_DIR=<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"</span><span class="va" style="color: #111111;
+background-color: null;
+font-style: inherit;">$HOME</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">/github/Byron/gitoxide/.git"</span> BASELINE_EXECUTABLE=<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"</span><span class="va" style="color: #111111;
+background-color: null;
+font-style: inherit;">$HOME</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">/bin/gix-2026-07-20-e63d487fb"</span> COMPARISON_EXECUTABLE=<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"</span><span class="va" style="color: #111111;
+background-color: null;
+font-style: inherit;">$HOME</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">/bin/gix-2026-07-20-9949e9fdf"</span> ./run_benchmark.py</span></code></pre></div></div>
+<div id="c28ff445" class="cell" data-execution_count="1">
+<details class="code-fold">
+<summary><code>run_benchmark.py</code>, the script used to benchmark both versions of <code>gix blame</code></summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">#!/usr/bin/env python</span></span>
+<span id="cb2-2"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># /// script</span></span>
+<span id="cb2-3"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># requires-python = "&gt;=3.13"</span></span>
+<span id="cb2-4"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># ///</span></span>
+<span id="cb2-5"></span>
+<span id="cb2-6"><span class="im" style="color: #00769E;
+background-color: null;
+font-style: inherit;">import</span> os</span>
+<span id="cb2-7"></span>
+<span id="cb2-8"><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">def</span> run(path, i):</span>
+<span id="cb2-9">    os.system(</span>
+<span id="cb2-10">        <span class="ss" style="color: #20794D;
+background-color: null;
+font-style: inherit;">f'hyperfine --parameter-list command "$BASELINE_EXECUTABLE","$COMPARISON_EXECUTABLE" --parameter-list path </span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">{</span>path<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">}</span><span class="ss" style="color: #20794D;
+background-color: null;
+font-style: inherit;"> "</span><span class="ch" style="color: #20794D;
+background-color: null;
+font-style: inherit;">{{</span><span class="ss" style="color: #20794D;
+background-color: null;
+font-style: inherit;">command</span><span class="ch" style="color: #20794D;
+background-color: null;
+font-style: inherit;">}}</span><span class="ss" style="color: #20794D;
+background-color: null;
+font-style: inherit;"> blame </span><span class="ch" style="color: #20794D;
+background-color: null;
+font-style: inherit;">{{</span><span class="ss" style="color: #20794D;
+background-color: null;
+font-style: inherit;">path</span><span class="ch" style="color: #20794D;
+background-color: null;
+font-style: inherit;">}}</span><span class="ss" style="color: #20794D;
+background-color: null;
+font-style: inherit;">" --command-name baseline --command-name comparison --export-json benchmark-</span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">{</span>i<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">}</span><span class="ss" style="color: #20794D;
+background-color: null;
+font-style: inherit;">.json'</span></span>
+<span id="cb2-11">    )</span>
+<span id="cb2-12"></span>
+<span id="cb2-13"><span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">for</span> i, path <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">in</span> <span class="bu" style="color: null;
+background-color: null;
+font-style: inherit;">enumerate</span>(</span>
+<span id="cb2-14">    [</span>
+<span id="cb2-15">        <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"CHANGELOG.md"</span>,</span>
+<span id="cb2-16">        <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"STABILITY.md"</span>,</span>
+<span id="cb2-17">        <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"README.md"</span>,</span>
+<span id="cb2-18">        <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Cargo.toml"</span>,</span>
+<span id="cb2-19">        <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"gix-blame/src/file/function.rs"</span>,</span>
+<span id="cb2-20">        <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"gix-path/src/env/mod.rs"</span>,</span>
+<span id="cb2-21">        <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"gix-index/tests/index/file/write.rs"</span>,</span>
+<span id="cb2-22">        <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"gix-object/src/lib.rs"</span>,</span>
+<span id="cb2-23">        <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"gix-odb/src/store_impls/loose/write.rs"</span>,</span>
+<span id="cb2-24">    ]</span>
+<span id="cb2-25">):</span>
+<span id="cb2-26">    run(path, i <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>)</span></code></pre></div></div>
+</details>
+</div>
+<p>This will create a couple of Markdown files, <code>benchmark-1.json</code> through <code>benchmark-9.json</code>.</p>
+</section>
+<section id="analyzing-the-data" class="level2">
+<h2 class="anchored" data-anchor-id="analyzing-the-data">Analyzing the data</h2>
+<p>Then, in order to work with these files, we’re going to use <code>numpy</code> and <code>pandas</code> to load them into <code>data</code>.</p>
+<div id="6813b800" class="cell" data-execution_count="2">
+<details class="code-fold">
+<summary>A few helper functions for loading the data</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><span class="im" style="color: #00769E;
+background-color: null;
+font-style: inherit;">import</span> numpy <span class="im" style="color: #00769E;
+background-color: null;
+font-style: inherit;">as</span> np</span>
+<span id="cb3-2"><span class="im" style="color: #00769E;
+background-color: null;
+font-style: inherit;">import</span> pandas <span class="im" style="color: #00769E;
+background-color: null;
+font-style: inherit;">as</span> pd</span>
+<span id="cb3-3"></span>
+<span id="cb3-4"><span class="im" style="color: #00769E;
+background-color: null;
+font-style: inherit;">import</span> matplotlib <span class="im" style="color: #00769E;
+background-color: null;
+font-style: inherit;">as</span> mpl</span>
+<span id="cb3-5"></span>
+<span id="cb3-6"><span class="im" style="color: #00769E;
+background-color: null;
+font-style: inherit;">import</span> seaborn <span class="im" style="color: #00769E;
+background-color: null;
+font-style: inherit;">as</span> sns</span>
+<span id="cb3-7"></span>
+<span id="cb3-8"><span class="im" style="color: #00769E;
+background-color: null;
+font-style: inherit;">import</span> json</span>
+<span id="cb3-9"></span>
+<span id="cb3-10"><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">def</span> load_results(filename):</span>
+<span id="cb3-11">    <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">with</span> <span class="bu" style="color: null;
+background-color: null;
+font-style: inherit;">open</span>(filename) <span class="im" style="color: #00769E;
+background-color: null;
+font-style: inherit;">as</span> f:</span>
+<span id="cb3-12">        <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">return</span> json.load(f)[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"results"</span>]</span>
+<span id="cb3-13"></span>
+<span id="cb3-14"><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">def</span> extract_data_points(result):</span>
+<span id="cb3-15">    command <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> result[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"command"</span>]</span>
+<span id="cb3-16">    path <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> result[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"parameters"</span>][<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"path"</span>]</span>
+<span id="cb3-17"></span>
+<span id="cb3-18">    <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">return</span> {<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"command"</span>: command, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"path"</span>: path, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"time"</span>: result[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"times"</span>]}</span></code></pre></div></div>
+</details>
+</div>
+<div id="b77d719d" class="cell" data-execution_count="3">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1">filenames <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> [<span class="ss" style="color: #20794D;
+background-color: null;
+font-style: inherit;">f"benchmark-</span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">{</span>i<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">}</span><span class="ss" style="color: #20794D;
+background-color: null;
+font-style: inherit;">.json"</span> <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">for</span> i <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">in</span> <span class="bu" style="color: null;
+background-color: null;
+font-style: inherit;">range</span>(<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">10</span>)]</span>
+<span id="cb4-2">results <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> [load_results(filename) <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">for</span> filename <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">in</span> filenames]</span>
+<span id="cb4-3">results <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> [extract_data_points(result) <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">for</span> result <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">in</span> np.concatenate(results)]</span>
+<span id="cb4-4"></span>
+<span id="cb4-5">data <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> pd.concat(</span>
+<span id="cb4-6">    [pd.DataFrame(result) <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">for</span> result <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">in</span> results],</span>
+<span id="cb4-7">    ignore_index<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="va" style="color: #111111;
+background-color: null;
+font-style: inherit;">True</span>,</span>
+<span id="cb4-8">)</span></code></pre></div></div>
+</div>
+<p>And finally, we’re going to create 2 plots that will give us an idea of how both versions of <code>gix blame</code> compare with respect to performance. Looking in particular at the boxplot, it seems that performance slightly regressed between March and July. I don’t know yet whether this is due to a particular change, and the effect is really small, so I’m not sure yet whether I’m going to investigate this in depth.</p>
+</section>
+<section id="creating-a-boxplot" class="level2">
+<h2 class="anchored" data-anchor-id="creating-a-boxplot">Creating a boxplot</h2>
+<div id="af11fce3" class="cell" data-execution_count="4">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1">FIGURE_WIDTH <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">8</span></span>
+<span id="cb5-2">FIGURE_ASPECT <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> <span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1.6</span></span>
+<span id="cb5-3"></span>
+<span id="cb5-4">sns.set_theme(</span>
+<span id="cb5-5">    palette<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Paired"</span>,</span>
+<span id="cb5-6">    rc<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span>{<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"figure.figsize"</span>: (FIGURE_WIDTH, FIGURE_WIDTH <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> FIGURE_ASPECT)},</span>
+<span id="cb5-7">)</span></code></pre></div></div>
+</details>
+</div>
+<div id="21aab198" class="cell" data-execution_count="5">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1">boxplot <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> sns.boxplot(x<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"time"</span>, y<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"path"</span>, hue<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"command"</span>, data<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span>data)</span>
+<span id="cb6-2">sns.despine(offset<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">10</span>, trim<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="va" style="color: #111111;
+background-color: null;
+font-style: inherit;">True</span>)</span>
+<span id="cb6-3">mpl.pyplot.tight_layout()</span>
+<span id="cb6-4">mpl.pyplot.show()</span></code></pre></div></div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="https://cruessler.github.io/posts/gix-blame-march-2026-through-july-2026/index_files/figure-html/cell-6-output-1.png" width="743" height="465" class="figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="creating-a-catplot" class="level2">
+<h2 class="anchored" data-anchor-id="creating-a-catplot">Creating a catplot</h2>
+<div id="511ccb75" class="cell" data-execution_count="6">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1">catplot <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> sns.catplot(</span>
+<span id="cb7-2">    x<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"time"</span>,</span>
+<span id="cb7-3">    y<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"path"</span>,</span>
+<span id="cb7-4">    hue<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"command"</span>,</span>
+<span id="cb7-5">    legend_out<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="va" style="color: #111111;
+background-color: null;
+font-style: inherit;">False</span>,</span>
+<span id="cb7-6">    height<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span>FIGURE_WIDTH <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> FIGURE_ASPECT,</span>
+<span id="cb7-7">    aspect<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span>FIGURE_ASPECT,</span>
+<span id="cb7-8">    data<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span>data,</span>
+<span id="cb7-9">)</span>
+<span id="cb7-10"></span>
+<span id="cb7-11">mpl.pyplot.show()</span></code></pre></div></div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="https://cruessler.github.io/posts/gix-blame-march-2026-through-july-2026/index_files/figure-html/cell-7-output-1.png" width="743" height="465" class="figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+
+
+</section>
+
+ ]]></description>
+  <category>code</category>
+  <category>analysis</category>
+  <guid>https://cruessler.github.io/posts/gix-blame-march-2026-through-july-2026/</guid>
+  <pubDate>Sun, 19 Jul 2026 00:00:00 GMT</pubDate>
+</item>
+</channel>
+</rss>
