@@ -195,7 +195,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h2 class="anchored" data-anchor-id="running-the-benchmark">Running the benchmark</h2>
 <p>After compiling both executables with <code>cargo build --release --locked</code>, I ran the following script to collect some data using <code>hyperfine</code>.</p>
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">env</span> GIT_DIR=<span class="st">"</span><span class="va">$HOME</span><span class="st">/github/Byron/gitoxide/.git"</span> BASELINE_EXECUTABLE=<span class="st">"</span><span class="va">$HOME</span><span class="st">/bin/gix-2026-07-20-e63d487fb"</span> COMPARISON_EXECUTABLE=<span class="st">"</span><span class="va">$HOME</span><span class="st">/bin/gix-2026-07-20-9949e9fdf"</span> ./run_benchmark.py</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div id="c28ff445" class="cell" data-execution_count="1">
+<div id="aac8adf4" class="cell" data-execution_count="1">
 <details class="code-fold">
 <summary><code>run_benchmark.py</code>, the script used to benchmark both versions of <code>gix blame</code></summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co">#!/usr/bin/env python</span></span>
@@ -231,7 +231,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="analyzing-the-data" class="level2">
 <h2 class="anchored" data-anchor-id="analyzing-the-data">Analyzing the data</h2>
 <p>Then, in order to work with these files, we’re going to use <code>numpy</code> and <code>pandas</code> to load them into <code>data</code>.</p>
-<div id="6813b800" class="cell" data-execution_count="2">
+<div id="283d4e5f" class="cell" data-execution_count="2">
 <details class="code-fold">
 <summary>A few helper functions for loading the data</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
@@ -254,7 +254,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> {<span class="st">"command"</span>: command, <span class="st">"path"</span>: path, <span class="st">"time"</span>: result[<span class="st">"times"</span>]}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 </div>
-<div id="b77d719d" class="cell" data-execution_count="3">
+<div id="a96c8d99" class="cell" data-execution_count="3">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>filenames <span class="op">=</span> [<span class="ss">f"benchmark-</span><span class="sc">{</span>i<span class="sc">}</span><span class="ss">.json"</span> <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">1</span>, <span class="dv">10</span>)]</span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>results <span class="op">=</span> [load_results(filename) <span class="cf">for</span> filename <span class="kw">in</span> filenames]</span>
 <span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>results <span class="op">=</span> [extract_data_points(result) <span class="cf">for</span> result <span class="kw">in</span> np.concatenate(results)]</span>
@@ -268,7 +268,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="creating-a-boxplot" class="level2">
 <h2 class="anchored" data-anchor-id="creating-a-boxplot">Creating a boxplot</h2>
-<div id="af11fce3" class="cell" data-execution_count="4">
+<div id="99c2f7fc" class="cell" data-execution_count="4">
 <details class="code-fold">
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>FIGURE_WIDTH <span class="op">=</span> <span class="dv">8</span></span>
@@ -280,7 +280,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 </div>
-<div id="21aab198" class="cell" data-execution_count="5">
+<div id="022c699d" class="cell" data-execution_count="5">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>boxplot <span class="op">=</span> sns.boxplot(x<span class="op">=</span><span class="st">"time"</span>, y<span class="op">=</span><span class="st">"path"</span>, hue<span class="op">=</span><span class="st">"command"</span>, data<span class="op">=</span>data)</span>
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>sns.despine(offset<span class="op">=</span><span class="dv">10</span>, trim<span class="op">=</span><span class="va">True</span>)</span>
 <span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>mpl.pyplot.tight_layout()</span>
@@ -294,24 +294,27 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 </section>
-<section id="creating-a-catplot" class="level2">
-<h2 class="anchored" data-anchor-id="creating-a-catplot">Creating a catplot</h2>
-<div id="511ccb75" class="cell" data-execution_count="6">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>catplot <span class="op">=</span> sns.catplot(</span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>    x<span class="op">=</span><span class="st">"time"</span>,</span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>    y<span class="op">=</span><span class="st">"path"</span>,</span>
-<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>    hue<span class="op">=</span><span class="st">"command"</span>,</span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>    legend_out<span class="op">=</span><span class="va">False</span>,</span>
-<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>    height<span class="op">=</span>FIGURE_WIDTH <span class="op">/</span> FIGURE_ASPECT,</span>
-<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>    aspect<span class="op">=</span>FIGURE_ASPECT,</span>
-<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>    data<span class="op">=</span>data,</span>
-<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>mpl.pyplot.show()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<section id="creating-a-stripplot" class="level2">
+<h2 class="anchored" data-anchor-id="creating-a-stripplot">Creating a stripplot</h2>
+<div id="6c3711cc" class="cell" data-execution_count="6">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>mpl.pyplot.figure(figsize<span class="op">=</span>(FIGURE_WIDTH <span class="op">*</span> <span class="fl">0.75</span>, FIGURE_WIDTH <span class="op">/</span> FIGURE_ASPECT))</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>stripplot <span class="op">=</span> sns.stripplot(</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>    x<span class="op">=</span><span class="st">"time"</span>,</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>    y<span class="op">=</span><span class="st">"path"</span>,</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>    hue<span class="op">=</span><span class="st">"command"</span>,</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>    dodge<span class="op">=</span><span class="va">True</span>,</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>    size<span class="op">=</span><span class="fl">2.5</span>,</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>    jitter<span class="op">=</span><span class="fl">0.2</span>,</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>    legend<span class="op">=</span><span class="va">False</span>,</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>    data<span class="op">=</span>data,</span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>mpl.pyplot.show()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="index_files/figure-html/cell-7-output-1.png" width="743" height="465" class="figure-img"></p>
+<p><img src="index_files/figure-html/cell-7-output-1.png" width="770" height="437" class="figure-img"></p>
 </figure>
 </div>
 </div>

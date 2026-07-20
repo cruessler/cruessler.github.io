@@ -47,7 +47,7 @@ background-color: null;
 font-style: inherit;">$HOME</span><span class="st" style="color: #20794D;
 background-color: null;
 font-style: inherit;">/bin/gix-2026-07-20-9949e9fdf"</span> ./run_benchmark.py</span></code></pre></div></div>
-<div id="c28ff445" class="cell" data-execution_count="1">
+<div id="aac8adf4" class="cell" data-execution_count="1">
 <details class="code-fold">
 <summary><code>run_benchmark.py</code>, the script used to benchmark both versions of <code>gix blame</code></summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><span class="co" style="color: #5E5E5E;
@@ -156,7 +156,7 @@ font-style: inherit;">1</span>)</span></code></pre></div></div>
 <section id="analyzing-the-data" class="level2">
 <h2 class="anchored" data-anchor-id="analyzing-the-data">Analyzing the data</h2>
 <p>Then, in order to work with these files, we’re going to use <code>numpy</code> and <code>pandas</code> to load them into <code>data</code>.</p>
-<div id="6813b800" class="cell" data-execution_count="2">
+<div id="283d4e5f" class="cell" data-execution_count="2">
 <details class="code-fold">
 <summary>A few helper functions for loading the data</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><span class="im" style="color: #00769E;
@@ -236,7 +236,7 @@ background-color: null;
 font-style: inherit;">"times"</span>]}</span></code></pre></div></div>
 </details>
 </div>
-<div id="b77d719d" class="cell" data-execution_count="3">
+<div id="a96c8d99" class="cell" data-execution_count="3">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1">filenames <span class="op" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">=</span> [<span class="ss" style="color: #20794D;
@@ -300,7 +300,7 @@ font-style: inherit;">True</span>,</span>
 </section>
 <section id="creating-a-boxplot" class="level2">
 <h2 class="anchored" data-anchor-id="creating-a-boxplot">Creating a boxplot</h2>
-<div id="af11fce3" class="cell" data-execution_count="4">
+<div id="99c2f7fc" class="cell" data-execution_count="4">
 <details class="code-fold">
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1">FIGURE_WIDTH <span class="op" style="color: #5E5E5E;
@@ -330,7 +330,7 @@ font-style: inherit;">/</span> FIGURE_ASPECT)},</span>
 <span id="cb5-7">)</span></code></pre></div></div>
 </details>
 </div>
-<div id="21aab198" class="cell" data-execution_count="5">
+<div id="022c699d" class="cell" data-execution_count="5">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1">boxplot <span class="op" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">=</span> sns.boxplot(x<span class="op" style="color: #5E5E5E;
@@ -368,50 +368,67 @@ font-style: inherit;">True</span>)</span>
 </div>
 </div>
 </section>
-<section id="creating-a-catplot" class="level2">
-<h2 class="anchored" data-anchor-id="creating-a-catplot">Creating a catplot</h2>
-<div id="511ccb75" class="cell" data-execution_count="6">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1">catplot <span class="op" style="color: #5E5E5E;
+<section id="creating-a-stripplot" class="level2">
+<h2 class="anchored" data-anchor-id="creating-a-stripplot">Creating a stripplot</h2>
+<div id="6c3711cc" class="cell" data-execution_count="6">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1">mpl.pyplot.figure(figsize<span class="op" style="color: #5E5E5E;
 background-color: null;
-font-style: inherit;">=</span> sns.catplot(</span>
-<span id="cb7-2">    x<span class="op" style="color: #5E5E5E;
+font-style: inherit;">=</span>(FIGURE_WIDTH <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> <span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0.75</span>, FIGURE_WIDTH <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> FIGURE_ASPECT))</span>
+<span id="cb7-2"></span>
+<span id="cb7-3">stripplot <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> sns.stripplot(</span>
+<span id="cb7-4">    x<span class="op" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">=</span><span class="st" style="color: #20794D;
 background-color: null;
 font-style: inherit;">"time"</span>,</span>
-<span id="cb7-3">    y<span class="op" style="color: #5E5E5E;
+<span id="cb7-5">    y<span class="op" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">=</span><span class="st" style="color: #20794D;
 background-color: null;
 font-style: inherit;">"path"</span>,</span>
-<span id="cb7-4">    hue<span class="op" style="color: #5E5E5E;
+<span id="cb7-6">    hue<span class="op" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">=</span><span class="st" style="color: #20794D;
 background-color: null;
 font-style: inherit;">"command"</span>,</span>
-<span id="cb7-5">    legend_out<span class="op" style="color: #5E5E5E;
+<span id="cb7-7">    dodge<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="va" style="color: #111111;
+background-color: null;
+font-style: inherit;">True</span>,</span>
+<span id="cb7-8">    size<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2.5</span>,</span>
+<span id="cb7-9">    jitter<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0.2</span>,</span>
+<span id="cb7-10">    legend<span class="op" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">=</span><span class="va" style="color: #111111;
 background-color: null;
 font-style: inherit;">False</span>,</span>
-<span id="cb7-6">    height<span class="op" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;">=</span>FIGURE_WIDTH <span class="op" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;">/</span> FIGURE_ASPECT,</span>
-<span id="cb7-7">    aspect<span class="op" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;">=</span>FIGURE_ASPECT,</span>
-<span id="cb7-8">    data<span class="op" style="color: #5E5E5E;
+<span id="cb7-11">    data<span class="op" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">=</span>data,</span>
-<span id="cb7-9">)</span>
-<span id="cb7-10"></span>
-<span id="cb7-11">mpl.pyplot.show()</span></code></pre></div></div>
+<span id="cb7-12">)</span>
+<span id="cb7-13"></span>
+<span id="cb7-14">mpl.pyplot.show()</span></code></pre></div></div>
 <div class="cell-output cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="https://cruessler.github.io/posts/gix-blame-march-2026-through-july-2026/index_files/figure-html/cell-7-output-1.png" width="743" height="465" class="figure-img"></p>
+<p><img src="https://cruessler.github.io/posts/gix-blame-march-2026-through-july-2026/index_files/figure-html/cell-7-output-1.png" width="770" height="437" class="figure-img"></p>
 </figure>
 </div>
 </div>
