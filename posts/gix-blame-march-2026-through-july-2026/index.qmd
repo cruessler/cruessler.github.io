@@ -143,16 +143,19 @@ mpl.pyplot.tight_layout()
 mpl.pyplot.show()
 ```
 
-## Creating a catplot
+## Creating a stripplot
 
 ```{python}
-catplot = sns.catplot(
+mpl.pyplot.figure(figsize=(FIGURE_WIDTH * 0.75, FIGURE_WIDTH / FIGURE_ASPECT))
+
+stripplot = sns.stripplot(
     x="time",
     y="path",
     hue="command",
-    legend_out=False,
-    height=FIGURE_WIDTH / FIGURE_ASPECT,
-    aspect=FIGURE_ASPECT,
+    dodge=True,
+    size=2.5,
+    jitter=0.2,
+    legend=False,
     data=data,
 )
 
