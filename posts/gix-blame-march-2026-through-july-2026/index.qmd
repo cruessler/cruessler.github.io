@@ -1,0 +1,160 @@
+---
+title: "gix-blame performance March 2026 through July 2026"
+author: "Christoph Rüßler"
+date: "2026-07-19"
+categories: [code, analysis]
+---
+
+This is the first post in a new blog in which I plan to infrequently post
+performance analyses related to [`gitoxide`][gitoxide]. This post is largely a
+port of existing code I used in two previous blog posts ([one measuring the
+difference between using `imara-diff` 0.1 and 0.2][imara-diff-0-1-vs-0-2],
+[another one measuring the effects of optimizing tree diffing by skipping
+identical subtrees][skip-identical-subtree-diff]), and it mainly exists to
+exercise the new publishing pipeline. The reason I’m now starting this separate
+blog is that my main blog runs on Jekyll which is not as well suited to the
+kinds of analyses that I want to work on from time to time as Quarto which is
+the software behind this new blog.
+
+[gitoxide]: https://github.com/GitoxideLabs/gitoxide.git
+[imara-diff-0-1-vs-0-2]: https://c.rubler.net/blog/2026/01/25/gix-blame-performance-with-imara-diff-0-1-and-0-2.html
+[skip-identical-subtree-diff]: https://c.rubler.net/blog/2026/03/14/gix-blame-performance-improved-by-a-change-in-gix-diff.html
+
+In this post, I’m going to compare `gix blame` at commit [`e63d487fb` (from
+February 16, 2026)][commit-e63d487fb] with `gix blame` at commit [`9949e9fdf`
+(from July 19, 2026)][commit-9949e9fdf] (the latter chosen because it happened
+to be `HEAD` when I started writing this post). Specifically, I’m going to
+compare the performance of `gix blame` on the same set of 9 files that I used
+for the benchmarks of my earlier posts.
+
+[commit-e63d487fb]: https://github.com/GitoxideLabs/gitoxide/commit/e63d487fb1b1425a9458fc7400517ad2c0280fd2
+[commit-9949e9fdf]: https://github.com/GitoxideLabs/gitoxide/commit/9949e9fdfa27a6630a8a12f7da07cbdd5c03aeed
+
+## Running the benchmark
+
+After compiling both executables with `cargo build --release --locked`, I ran
+the following script to collect some data using `hyperfine`.
+
+```bash
+env GIT_DIR="$HOME/github/Byron/gitoxide/.git" BASELINE_EXECUTABLE="$HOME/bin/gix-2026-07-20-e63d487fb" COMPARISON_EXECUTABLE="$HOME/bin/gix-2026-07-20-9949e9fdf" ./run_benchmark.py
+```
+
+```{python}
+#| eval: false
+#| code-fold: true
+#| code-summary: "`run_benchmark.py`, the script used to benchmark both versions of `gix blame`"
+
+#!/usr/bin/env python
+# /// script
+# requires-python = ">=3.13"
+# ///
+
+import os
+
+def run(path, i):
+    os.system(
+        f'hyperfine --parameter-list command "$BASELINE_EXECUTABLE","$COMPARISON_EXECUTABLE" --parameter-list path {path} "{{command}} blame {{path}}" --command-name baseline --command-name comparison --export-json benchmark-{i}.json'
+    )
+
+for i, path in enumerate(
+    [
+        "CHANGELOG.md",
+        "STABILITY.md",
+        "README.md",
+        "Cargo.toml",
+        "gix-blame/src/file/function.rs",
+        "gix-path/src/env/mod.rs",
+        "gix-index/tests/index/file/write.rs",
+        "gix-object/src/lib.rs",
+        "gix-odb/src/store_impls/loose/write.rs",
+    ]
+):
+    run(path, i + 1)
+```
+
+This will create a couple of Markdown files, `benchmark-1.json` through
+`benchmark-9.json`.
+
+## Analyzing the data
+
+Then, in order to work with these files, we’re going to use `numpy` and
+`pandas` to load them into `data`.
+
+```{python}
+#| code-fold: true
+#| code-summary: A few helper functions for loading the data
+
+import numpy as np
+import pandas as pd
+
+import matplotlib as mpl
+
+import seaborn as sns
+
+import json
+
+def load_results(filename):
+    with open(filename) as f:
+        return json.load(f)["results"]
+
+def extract_data_points(result):
+    command = result["command"]
+    path = result["parameters"]["path"]
+
+    return {"command": command, "path": path, "time": result["times"]}
+```
+
+```{python}
+filenames = [f"benchmark-{i}.json" for i in range(1, 10)]
+results = [load_results(filename) for filename in filenames]
+results = [extract_data_points(result) for result in np.concatenate(results)]
+
+data = pd.concat(
+    [pd.DataFrame(result) for result in results],
+    ignore_index=True,
+)
+```
+
+And finally, we’re going to create 2 plots that will give us an idea of how
+both versions of `gix blame` compare with respect to performance. Looking in
+particular at the boxplot, it seems that performance slightly regressed between
+March and July. I don’t know yet whether this is due to a particular change,
+and the effect is really small, so I’m not sure yet whether I’m going to
+investigate this in depth.
+
+## Creating a boxplot
+
+```{python}
+#| code-fold: true
+
+FIGURE_WIDTH = 8
+FIGURE_ASPECT = 1.6
+
+sns.set_theme(
+    palette="Paired",
+    rc={"figure.figsize": (FIGURE_WIDTH, FIGURE_WIDTH / FIGURE_ASPECT)},
+)
+```
+
+```{python}
+boxplot = sns.boxplot(x="time", y="path", hue="command", data=data)
+sns.despine(offset=10, trim=True)
+mpl.pyplot.tight_layout()
+mpl.pyplot.show()
+```
+
+## Creating a catplot
+
+```{python}
+catplot = sns.catplot(
+    x="time",
+    y="path",
+    hue="command",
+    legend_out=False,
+    height=FIGURE_WIDTH / FIGURE_ASPECT,
+    aspect=FIGURE_ASPECT,
+    data=data,
+)
+
+mpl.pyplot.show()
+```
