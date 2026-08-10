@@ -9,7 +9,7 @@
 <link>https://cruessler.github.io/</link>
 <atom:link href="https://cruessler.github.io/index.xml" rel="self" type="application/rss+xml"/>
 <description>A blog where I infrequently post performance analyses of gitoxide</description>
-<generator>quarto-1.9.38</generator>
+<generator>quarto-1.10.18</generator>
 <lastBuildDate>Sun, 19 Jul 2026 00:00:00 GMT</lastBuildDate>
 <item>
   <title>gix-blame performance March 2026 through July 2026</title>
@@ -21,6 +21,19 @@
 
 
 
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>If you’re wondering why there’s earlier posts in this blog even though the first paragraph mentions this is the first post: the other, earlier posts were published on my main blog before this blog existed and then later imported with their original publication date.</p>
+</div>
+</div>
 <p>This is the first post in a new blog in which I plan to infrequently post performance analyses related to <a href="https://github.com/GitoxideLabs/gitoxide.git"><code>gitoxide</code></a>. This post is largely a port of existing code I used in two previous blog posts (<a href="https://c.rubler.net/blog/2026/01/25/gix-blame-performance-with-imara-diff-0-1-and-0-2.html">one measuring the difference between using <code>imara-diff</code> 0.1 and 0.2</a>, <a href="https://c.rubler.net/blog/2026/03/14/gix-blame-performance-improved-by-a-change-in-gix-diff.html">another one measuring the effects of optimizing tree diffing by skipping identical subtrees</a>), and it mainly exists to exercise the new publishing pipeline. The reason I’m now starting this separate blog is that my main blog runs on Jekyll which is not as well suited to the kinds of analyses that I want to work on from time to time as Quarto which is the software behind this new blog.</p>
 <p>In this post, I’m going to compare <code>gix blame</code> at commit <a href="https://github.com/GitoxideLabs/gitoxide/commit/e63d487fb1b1425a9458fc7400517ad2c0280fd2"><code>e63d487fb</code> (from February 16, 2026)</a> with <code>gix blame</code> at commit <a href="https://github.com/GitoxideLabs/gitoxide/commit/9949e9fdfa27a6630a8a12f7da07cbdd5c03aeed"><code>9949e9fdf</code> (from July 19, 2026)</a> (the latter chosen because it happened to be <code>HEAD</code> when I started writing this post). Specifically, I’m going to compare the performance of <code>gix blame</code> on the same set of 9 files that I used for the benchmarks of my earlier posts.</p>
 <section id="running-the-benchmark" class="level2">
@@ -47,7 +60,7 @@ background-color: null;
 font-style: inherit;">$HOME</span><span class="st" style="color: #20794D;
 background-color: null;
 font-style: inherit;">/bin/gix-2026-07-20-9949e9fdf"</span> ./run_benchmark.py</span></code></pre></div></div>
-<div id="aac8adf4" class="cell" data-execution_count="1">
+<div id="705d3aa9" class="cell" data-execution_count="1">
 <details class="code-fold">
 <summary><code>run_benchmark.py</code>, the script used to benchmark both versions of <code>gix blame</code></summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><span class="co" style="color: #5E5E5E;
@@ -153,10 +166,10 @@ font-style: inherit;">1</span>)</span></code></pre></div></div>
 </div>
 <p>This will create a couple of Markdown files, <code>benchmark-1.json</code> through <code>benchmark-9.json</code>.</p>
 </section>
-<section id="analyzing-the-data" class="level2">
-<h2 class="anchored" data-anchor-id="analyzing-the-data">Analyzing the data</h2>
+<section id="loading-the-data" class="level2">
+<h2 class="anchored" data-anchor-id="loading-the-data">Loading the data</h2>
 <p>Then, in order to work with these files, we’re going to use <code>numpy</code> and <code>pandas</code> to load them into <code>data</code>.</p>
-<div id="283d4e5f" class="cell" data-execution_count="2">
+<div id="8d0d5384" class="cell" data-execution_count="2">
 <details class="code-fold">
 <summary>A few helper functions for loading the data</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><span class="im" style="color: #00769E;
@@ -236,7 +249,7 @@ background-color: null;
 font-style: inherit;">"times"</span>]}</span></code></pre></div></div>
 </details>
 </div>
-<div id="a96c8d99" class="cell" data-execution_count="3">
+<div id="6dc474c4" class="cell" data-execution_count="3">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1">filenames <span class="op" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">=</span> [<span class="ss" style="color: #20794D;
@@ -296,11 +309,11 @@ background-color: null;
 font-style: inherit;">True</span>,</span>
 <span id="cb4-8">)</span></code></pre></div></div>
 </div>
-<p>And finally, we’re going to create 2 plots that will give us an idea of how both versions of <code>gix blame</code> compare with respect to performance. Looking in particular at the boxplot, it seems that performance slightly regressed between March and July. I don’t know yet whether this is due to a particular change, and the effect is really small, so I’m not sure yet whether I’m going to investigate this in depth.</p>
+<p>And finally, we’re going to create 2 plots that will give us an idea of how both versions of <code>gix blame</code> compare with respect to performance. Looking in particular at the boxplot, it seems that performance slightly regressed between March and July.</p>
 </section>
 <section id="creating-a-boxplot" class="level2">
 <h2 class="anchored" data-anchor-id="creating-a-boxplot">Creating a boxplot</h2>
-<div id="99c2f7fc" class="cell" data-execution_count="4">
+<div id="bac00869" class="cell" data-execution_count="4">
 <details class="code-fold">
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1">FIGURE_WIDTH <span class="op" style="color: #5E5E5E;
@@ -330,7 +343,7 @@ font-style: inherit;">/</span> FIGURE_ASPECT)},</span>
 <span id="cb5-7">)</span></code></pre></div></div>
 </details>
 </div>
-<div id="022c699d" class="cell" data-execution_count="5">
+<div id="d0376107" class="cell" data-execution_count="5">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1">boxplot <span class="op" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">=</span> sns.boxplot(x<span class="op" style="color: #5E5E5E;
@@ -370,7 +383,7 @@ font-style: inherit;">True</span>)</span>
 </section>
 <section id="creating-a-stripplot" class="level2">
 <h2 class="anchored" data-anchor-id="creating-a-stripplot">Creating a stripplot</h2>
-<div id="6c3711cc" class="cell" data-execution_count="6">
+<div id="c9b710ec" class="cell" data-execution_count="6">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1">mpl.pyplot.figure(figsize<span class="op" style="color: #5E5E5E;
 background-color: null;
 font-style: inherit;">=</span>(FIGURE_WIDTH <span class="op" style="color: #5E5E5E;
@@ -433,6 +446,429 @@ font-style: inherit;">=</span>data,</span>
 </div>
 </div>
 </div>
+</section>
+<section id="conclusion" class="level2">
+<h2 class="anchored" data-anchor-id="conclusion">Conclusion</h2>
+<p>Aggregating the data in a table confirms the initial impression we got from both plots: in this sample, <code>gix-blame</code> seems to have gotten slightly slower across the board, with losses of more than 4 % in one case. I don’t know yet whether this is due to a particular change, and the effect is not dramatic, but I plan on investigating this more in-depth in the future if time permits.</p>
+<div id="f4bd9565" class="cell" data-execution_count="7">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1">summary <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> (</span>
+<span id="cb8-2">    data</span>
+<span id="cb8-3">    .groupby([<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"path"</span>, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"command"</span>])</span>
+<span id="cb8-4">    .agg(</span>
+<span id="cb8-5">        mean<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"time"</span>, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"mean"</span>),</span>
+<span id="cb8-6">        stddev<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"time"</span>, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"std"</span>),</span>
+<span id="cb8-7">    )</span>
+<span id="cb8-8">    .reset_index()</span>
+<span id="cb8-9">)</span>
+<span id="cb8-10"></span>
+<span id="cb8-11">summary[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"mean_ms"</span>] <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> summary[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"mean"</span>] <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1000</span></span>
+<span id="cb8-12">summary[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"stddev_ms"</span>] <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> summary[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"stddev"</span>] <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1000</span></span>
+<span id="cb8-13"></span>
+<span id="cb8-14">wide <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> summary.pivot(</span>
+<span id="cb8-15">    index<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"path"</span>,</span>
+<span id="cb8-16">    columns<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"command"</span>,</span>
+<span id="cb8-17">    values<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span>[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"mean_ms"</span>, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"stddev_ms"</span>],</span>
+<span id="cb8-18">)</span>
+<span id="cb8-19"></span>
+<span id="cb8-20">table <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> pd.DataFrame({</span>
+<span id="cb8-21">    <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"baseline_mean_ms"</span>: wide[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"mean_ms"</span>][<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"baseline"</span>],</span>
+<span id="cb8-22">    <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"baseline_stddev_ms"</span>: wide[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"stddev_ms"</span>][<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"baseline"</span>],</span>
+<span id="cb8-23">    <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"comparison_mean_ms"</span>: wide[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"mean_ms"</span>][<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"comparison"</span>],</span>
+<span id="cb8-24">    <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"comparison_stddev_ms"</span>: wide[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"stddev_ms"</span>][<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"comparison"</span>],</span>
+<span id="cb8-25">})</span>
+<span id="cb8-26"></span>
+<span id="cb8-27">table[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Δ ms"</span>] <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> table[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"comparison_mean_ms"</span>] <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span> table[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"baseline_mean_ms"</span>]</span>
+<span id="cb8-28">table[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Δ %"</span>] <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> table[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Δ ms"</span>] <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> table[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"baseline_mean_ms"</span>] <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">100</span></span>
+<span id="cb8-29">table[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"ratio"</span>] <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> table[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"comparison_mean_ms"</span>] <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> table[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"baseline_mean_ms"</span>]</span>
+<span id="cb8-30"></span>
+<span id="cb8-31">table <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> table.sort_values(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Δ %"</span>, ascending<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="va" style="color: #111111;
+background-color: null;
+font-style: inherit;">False</span>)</span>
+<span id="cb8-32"></span>
+<span id="cb8-33">display_table <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> pd.DataFrame({</span>
+<span id="cb8-34">    <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"path"</span>: table.index.to_list(),</span>
+<span id="cb8-35">    <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"baseline mean ± sd"</span>: [</span>
+<span id="cb8-36">        <span class="ss" style="color: #20794D;
+background-color: null;
+font-style: inherit;">f"</span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">{</span>mean<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">:.2f}</span><span class="ss" style="color: #20794D;
+background-color: null;
+font-style: inherit;"> ± </span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">{</span>sd<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">:.2f}</span><span class="ss" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"</span></span>
+<span id="cb8-37">        <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">for</span> mean, sd <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">in</span> <span class="bu" style="color: null;
+background-color: null;
+font-style: inherit;">zip</span>(table[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"baseline_mean_ms"</span>], table[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"baseline_stddev_ms"</span>])</span>
+<span id="cb8-38">    ],</span>
+<span id="cb8-39">    <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"comparison mean ± sd"</span>: [</span>
+<span id="cb8-40">        <span class="ss" style="color: #20794D;
+background-color: null;
+font-style: inherit;">f"</span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">{</span>mean<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">:.2f}</span><span class="ss" style="color: #20794D;
+background-color: null;
+font-style: inherit;"> ± </span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">{</span>sd<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">:.2f}</span><span class="ss" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"</span></span>
+<span id="cb8-41">        <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">for</span> mean, sd <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">in</span> <span class="bu" style="color: null;
+background-color: null;
+font-style: inherit;">zip</span>(table[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"comparison_mean_ms"</span>], table[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"comparison_stddev_ms"</span>])</span>
+<span id="cb8-42">    ],</span>
+<span id="cb8-43">    <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Δ ms"</span>: table[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Δ ms"</span>].to_list(),</span>
+<span id="cb8-44">    <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Δ %"</span>: table[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Δ %"</span>].to_list(),</span>
+<span id="cb8-45">    <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"ratio"</span>: table[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"ratio"</span>].to_list(),</span>
+<span id="cb8-46">})</span>
+<span id="cb8-47"></span>
+<span id="cb8-48">display_table.style.<span class="bu" style="color: null;
+background-color: null;
+font-style: inherit;">format</span>({</span>
+<span id="cb8-49">    <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Δ ms"</span>: <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"</span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">{:+.2f}</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"</span>,</span>
+<span id="cb8-50">    <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Δ %"</span>: <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"</span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">{:+.2f}</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">%"</span>,</span>
+<span id="cb8-51">    <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"ratio"</span>: <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"</span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">{:.3f}</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">×"</span>,</span>
+<span id="cb8-52">}).background_gradient(</span>
+<span id="cb8-53">    subset<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span>[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Δ %"</span>],</span>
+<span id="cb8-54">    cmap<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Reds"</span>,</span>
+<span id="cb8-55">).hide(axis<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"index"</span>)</span></code></pre></div></div>
+</details>
+<div class="cell-output cell-output-display" data-execution_count="89">
+<style type="text/css">
+#T_4e39e_row0_col4 {
+  background-color: #67000d;
+  color: #f1f1f1;
+}
+#T_4e39e_row1_col4 {
+  background-color: #ee3a2c;
+  color: #f1f1f1;
+}
+#T_4e39e_row2_col4 {
+  background-color: #fb7c5c;
+  color: #f1f1f1;
+}
+#T_4e39e_row3_col4 {
+  background-color: #fc8565;
+  color: #f1f1f1;
+}
+#T_4e39e_row4_col4 {
+  background-color: #fc8a6a;
+  color: #f1f1f1;
+}
+#T_4e39e_row5_col4 {
+  background-color: #fc8e6e;
+  color: #000000;
+}
+#T_4e39e_row6_col4 {
+  background-color: #fc997a;
+  color: #000000;
+}
+#T_4e39e_row7_col4 {
+  background-color: #fcc4ad;
+  color: #000000;
+}
+#T_4e39e_row8_col4 {
+  background-color: #fff5f0;
+  color: #000000;
+}
+</style>
+
+<table id="T_4e39e" class="caption-top table table-sm table-striped small">
+<thead>
+<tr class="header">
+<th id="T_4e39e_level0_col0" class="col_heading level0 col0" data-quarto-table-cell-role="th">path</th>
+<th id="T_4e39e_level0_col1" class="col_heading level0 col1" data-quarto-table-cell-role="th">baseline mean ± sd</th>
+<th id="T_4e39e_level0_col2" class="col_heading level0 col2" data-quarto-table-cell-role="th">comparison mean ± sd</th>
+<th id="T_4e39e_level0_col3" class="col_heading level0 col3" data-quarto-table-cell-role="th">Δ ms</th>
+<th id="T_4e39e_level0_col4" class="col_heading level0 col4" data-quarto-table-cell-role="th">Δ %</th>
+<th id="T_4e39e_level0_col5" class="col_heading level0 col5" data-quarto-table-cell-role="th">ratio</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td id="T_4e39e_row0_col0" class="data row0 col0">gix-odb/src/store_impls/loose/write.rs</td>
+<td id="T_4e39e_row0_col1" class="data row0 col1">70.75 ± 2.83</td>
+<td id="T_4e39e_row0_col2" class="data row0 col2">73.77 ± 2.42</td>
+<td id="T_4e39e_row0_col3" class="data row0 col3">+3.01</td>
+<td id="T_4e39e_row0_col4" class="data row0 col4">+4.26%</td>
+<td id="T_4e39e_row0_col5" class="data row0 col5">1.043×</td>
+</tr>
+<tr class="even">
+<td id="T_4e39e_row1_col0" class="data row1 col0">gix-object/src/lib.rs</td>
+<td id="T_4e39e_row1_col1" class="data row1 col1">72.82 ± 2.04</td>
+<td id="T_4e39e_row1_col2" class="data row1 col2">75.00 ± 2.30</td>
+<td id="T_4e39e_row1_col3" class="data row1 col3">+2.17</td>
+<td id="T_4e39e_row1_col4" class="data row1 col4">+2.98%</td>
+<td id="T_4e39e_row1_col5" class="data row1 col5">1.030×</td>
+</tr>
+<tr class="odd">
+<td id="T_4e39e_row2_col0" class="data row2 col0">STABILITY.md</td>
+<td id="T_4e39e_row2_col1" class="data row2 col1">47.24 ± 1.28</td>
+<td id="T_4e39e_row2_col2" class="data row2 col2">48.36 ± 1.82</td>
+<td id="T_4e39e_row2_col3" class="data row2 col3">+1.11</td>
+<td id="T_4e39e_row2_col4" class="data row2 col4">+2.36%</td>
+<td id="T_4e39e_row2_col5" class="data row2 col5">1.024×</td>
+</tr>
+<tr class="even">
+<td id="T_4e39e_row3_col0" class="data row3 col0">gix-index/tests/index/file/write.rs</td>
+<td id="T_4e39e_row3_col1" class="data row3 col1">46.26 ± 1.69</td>
+<td id="T_4e39e_row3_col2" class="data row3 col2">47.31 ± 1.47</td>
+<td id="T_4e39e_row3_col3" class="data row3 col3">+1.05</td>
+<td id="T_4e39e_row3_col4" class="data row3 col4">+2.26%</td>
+<td id="T_4e39e_row3_col5" class="data row3 col5">1.023×</td>
+</tr>
+<tr class="odd">
+<td id="T_4e39e_row4_col0" class="data row4 col0">gix-blame/src/file/function.rs</td>
+<td id="T_4e39e_row4_col1" class="data row4 col1">31.33 ± 1.29</td>
+<td id="T_4e39e_row4_col2" class="data row4 col2">32.02 ± 1.20</td>
+<td id="T_4e39e_row4_col3" class="data row4 col3">+0.69</td>
+<td id="T_4e39e_row4_col4" class="data row4 col4">+2.21%</td>
+<td id="T_4e39e_row4_col5" class="data row4 col5">1.022×</td>
+</tr>
+<tr class="even">
+<td id="T_4e39e_row5_col0" class="data row5 col0">CHANGELOG.md</td>
+<td id="T_4e39e_row5_col1" class="data row5 col1">137.27 ± 2.21</td>
+<td id="T_4e39e_row5_col2" class="data row5 col2">140.25 ± 2.75</td>
+<td id="T_4e39e_row5_col3" class="data row5 col3">+2.98</td>
+<td id="T_4e39e_row5_col4" class="data row5 col4">+2.17%</td>
+<td id="T_4e39e_row5_col5" class="data row5 col5">1.022×</td>
+</tr>
+<tr class="odd">
+<td id="T_4e39e_row6_col0" class="data row6 col0">Cargo.toml</td>
+<td id="T_4e39e_row6_col1" class="data row6 col1">87.97 ± 2.54</td>
+<td id="T_4e39e_row6_col2" class="data row6 col2">89.78 ± 3.02</td>
+<td id="T_4e39e_row6_col3" class="data row6 col3">+1.80</td>
+<td id="T_4e39e_row6_col4" class="data row6 col4">+2.05%</td>
+<td id="T_4e39e_row6_col5" class="data row6 col5">1.020×</td>
+</tr>
+<tr class="even">
+<td id="T_4e39e_row7_col0" class="data row7 col0">gix-path/src/env/mod.rs</td>
+<td id="T_4e39e_row7_col1" class="data row7 col1">33.30 ± 1.59</td>
+<td id="T_4e39e_row7_col2" class="data row7 col2">33.83 ± 1.44</td>
+<td id="T_4e39e_row7_col3" class="data row7 col3">+0.53</td>
+<td id="T_4e39e_row7_col4" class="data row7 col4">+1.60%</td>
+<td id="T_4e39e_row7_col5" class="data row7 col5">1.016×</td>
+</tr>
+<tr class="odd">
+<td id="T_4e39e_row8_col0" class="data row8 col0">README.md</td>
+<td id="T_4e39e_row8_col1" class="data row8 col1">99.88 ± 2.30</td>
+<td id="T_4e39e_row8_col2" class="data row8 col2">100.73 ± 1.79</td>
+<td id="T_4e39e_row8_col3" class="data row8 col3">+0.84</td>
+<td id="T_4e39e_row8_col4" class="data row8 col4">+0.84%</td>
+<td id="T_4e39e_row8_col5" class="data row8 col5">1.008×</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 
 
 </section>
@@ -442,6 +878,1775 @@ font-style: inherit;">=</span>data,</span>
   <category>analysis</category>
   <guid>https://cruessler.github.io/posts/gix-blame-march-2026-through-july-2026/</guid>
   <pubDate>Sun, 19 Jul 2026 00:00:00 GMT</pubDate>
+</item>
+<item>
+  <title>gix-blame performance improved by a change in gix-diff</title>
+  <dc:creator>Christoph Rüßler</dc:creator>
+  <link>https://cruessler.github.io/posts/gix-blame-performance-improved-by-a-change-in-gix-diff/</link>
+  <description><![CDATA[ 
+
+
+
+
+
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>This post is a modernized version of an <a href="https://c.rubler.net/blog/2026/03/14/gix-blame-performance-improved-by-a-change-in-gix-diff.html">earlier post</a> of mine in my main blog.</p>
+<p>This post’s “published” date reflects the date the original post was published.</p>
+</div>
+</div>
+<p>In February 2026, we got a <a href="https://github.com/GitoxideLabs/gitoxide/pull/2438">PR in <code>gitoxide</code></a> that substantially improved <code>gix-diff</code>’s tree diff performance. Since <code>gix-blame</code>’s algorithm uses a lot of tree diffs under the hood, I wanted to know what the impact on <code>gix-blame</code>’s performance was.</p>
+<p>I set up a benchmark using <code>hyperfine</code>, and the results are quite impressive: speedups of more than 20 % in some scenarios, with no noticeable performance degradation in any of the scenarios I included. From what I can tell, the speedup depends on the directory depth at which the blamed file lives. This is plausible because nested tree diffs are more expensive than flat ones.</p>
+<section id="running-the-benchmark" class="level2">
+<h2 class="anchored" data-anchor-id="running-the-benchmark">Running the benchmark</h2>
+<p>The comparison was run between <a href="https://github.com/GitoxideLabs/gitoxide/commit/e63d487fb1b1425a9458fc7400517ad2c0280fd2">this commit that contained the optimization</a> and <a href="https://github.com/GitoxideLabs/gitoxide/commit/29040a8277735cbc9fcd0d80626c75d710d3da2a">its parent</a>. After compiling both executables with <code>cargo build --release --locked</code>, I ran the following script to collect some data using <code>hyperfine</code>.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">env</span> GIT_DIR=<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"</span><span class="va" style="color: #111111;
+background-color: null;
+font-style: inherit;">$HOME</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">/github/Byron/gitoxide/.git"</span> BASELINE_EXECUTABLE=<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"</span><span class="va" style="color: #111111;
+background-color: null;
+font-style: inherit;">$HOME</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">/bin/gix-blame-2026-03-08-29040a827"</span> COMPARISON_EXECUTABLE=<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"</span><span class="va" style="color: #111111;
+background-color: null;
+font-style: inherit;">$HOME</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">/bin/gix-blame-2026-03-08-e63d487fb"</span> ./run_benchmark.py</span></code></pre></div></div>
+<div id="de0acee5" class="cell" data-execution_count="1">
+<details class="code-fold">
+<summary><code>run_benchmark.py</code>, the script used to benchmark both versions of <code>gix blame</code></summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">#!/usr/bin/env python</span></span>
+<span id="cb2-2"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># /// script</span></span>
+<span id="cb2-3"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># requires-python = "&gt;=3.13"</span></span>
+<span id="cb2-4"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># ///</span></span>
+<span id="cb2-5"></span>
+<span id="cb2-6"><span class="im" style="color: #00769E;
+background-color: null;
+font-style: inherit;">import</span> os</span>
+<span id="cb2-7"></span>
+<span id="cb2-8"><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">def</span> run(path, i):</span>
+<span id="cb2-9">    os.system(</span>
+<span id="cb2-10">        <span class="ss" style="color: #20794D;
+background-color: null;
+font-style: inherit;">f'hyperfine --parameter-list command "$BASELINE_EXECUTABLE","$COMPARISON_EXECUTABLE" --parameter-list path </span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">{</span>path<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">}</span><span class="ss" style="color: #20794D;
+background-color: null;
+font-style: inherit;"> "</span><span class="ch" style="color: #20794D;
+background-color: null;
+font-style: inherit;">{{</span><span class="ss" style="color: #20794D;
+background-color: null;
+font-style: inherit;">command</span><span class="ch" style="color: #20794D;
+background-color: null;
+font-style: inherit;">}}</span><span class="ss" style="color: #20794D;
+background-color: null;
+font-style: inherit;"> blame </span><span class="ch" style="color: #20794D;
+background-color: null;
+font-style: inherit;">{{</span><span class="ss" style="color: #20794D;
+background-color: null;
+font-style: inherit;">path</span><span class="ch" style="color: #20794D;
+background-color: null;
+font-style: inherit;">}}</span><span class="ss" style="color: #20794D;
+background-color: null;
+font-style: inherit;">" --command-name baseline --command-name comparison --export-json benchmark-</span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">{</span>i<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">}</span><span class="ss" style="color: #20794D;
+background-color: null;
+font-style: inherit;">.json'</span></span>
+<span id="cb2-11">    )</span>
+<span id="cb2-12"></span>
+<span id="cb2-13"><span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">for</span> i, path <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">in</span> <span class="bu" style="color: null;
+background-color: null;
+font-style: inherit;">enumerate</span>(</span>
+<span id="cb2-14">    [</span>
+<span id="cb2-15">        <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"CHANGELOG.md"</span>,</span>
+<span id="cb2-16">        <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"STABILITY.md"</span>,</span>
+<span id="cb2-17">        <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"README.md"</span>,</span>
+<span id="cb2-18">        <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Cargo.toml"</span>,</span>
+<span id="cb2-19">        <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"gix-blame/src/file/function.rs"</span>,</span>
+<span id="cb2-20">        <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"gix-path/src/env/mod.rs"</span>,</span>
+<span id="cb2-21">        <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"gix-index/tests/index/file/write.rs"</span>,</span>
+<span id="cb2-22">        <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"gix-object/src/lib.rs"</span>,</span>
+<span id="cb2-23">        <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"gix-odb/src/store_impls/loose/write.rs"</span>,</span>
+<span id="cb2-24">    ]</span>
+<span id="cb2-25">):</span>
+<span id="cb2-26">    run(path, i <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>)</span></code></pre></div></div>
+</details>
+</div>
+<p>This will create a couple of Markdown files, <code>benchmark-1.json</code> through <code>benchmark-9.json</code>.</p>
+</section>
+<section id="loading-the-data" class="level2">
+<h2 class="anchored" data-anchor-id="loading-the-data">Loading the data</h2>
+<p>Then, in order to work with these files, we’re going to use <code>numpy</code> and <code>pandas</code> to load them into <code>data</code>.</p>
+<div id="e806d348" class="cell" data-execution_count="2">
+<details class="code-fold">
+<summary>A few helper functions for loading the data</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><span class="im" style="color: #00769E;
+background-color: null;
+font-style: inherit;">import</span> numpy <span class="im" style="color: #00769E;
+background-color: null;
+font-style: inherit;">as</span> np</span>
+<span id="cb3-2"><span class="im" style="color: #00769E;
+background-color: null;
+font-style: inherit;">import</span> pandas <span class="im" style="color: #00769E;
+background-color: null;
+font-style: inherit;">as</span> pd</span>
+<span id="cb3-3"></span>
+<span id="cb3-4"><span class="im" style="color: #00769E;
+background-color: null;
+font-style: inherit;">import</span> matplotlib <span class="im" style="color: #00769E;
+background-color: null;
+font-style: inherit;">as</span> mpl</span>
+<span id="cb3-5"></span>
+<span id="cb3-6"><span class="im" style="color: #00769E;
+background-color: null;
+font-style: inherit;">import</span> seaborn <span class="im" style="color: #00769E;
+background-color: null;
+font-style: inherit;">as</span> sns</span>
+<span id="cb3-7"></span>
+<span id="cb3-8"><span class="im" style="color: #00769E;
+background-color: null;
+font-style: inherit;">import</span> json</span>
+<span id="cb3-9"></span>
+<span id="cb3-10"><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">def</span> load_results(filename):</span>
+<span id="cb3-11">    <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">with</span> <span class="bu" style="color: null;
+background-color: null;
+font-style: inherit;">open</span>(filename) <span class="im" style="color: #00769E;
+background-color: null;
+font-style: inherit;">as</span> f:</span>
+<span id="cb3-12">        <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">return</span> json.load(f)[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"results"</span>]</span>
+<span id="cb3-13"></span>
+<span id="cb3-14"><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">def</span> extract_data_points(result):</span>
+<span id="cb3-15">    command <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> result[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"command"</span>]</span>
+<span id="cb3-16">    path <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> result[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"parameters"</span>][<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"path"</span>]</span>
+<span id="cb3-17"></span>
+<span id="cb3-18">    <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">return</span> {<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"command"</span>: command, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"path"</span>: path, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"time"</span>: result[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"times"</span>]}</span></code></pre></div></div>
+</details>
+</div>
+<div id="21259e71" class="cell" data-execution_count="3">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1">filenames <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> [<span class="ss" style="color: #20794D;
+background-color: null;
+font-style: inherit;">f"benchmark-</span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">{</span>i<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">}</span><span class="ss" style="color: #20794D;
+background-color: null;
+font-style: inherit;">.json"</span> <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">for</span> i <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">in</span> <span class="bu" style="color: null;
+background-color: null;
+font-style: inherit;">range</span>(<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">10</span>)]</span>
+<span id="cb4-2">results <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> [load_results(filename) <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">for</span> filename <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">in</span> filenames]</span>
+<span id="cb4-3">results <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> [extract_data_points(result) <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">for</span> result <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">in</span> np.concatenate(results)]</span>
+<span id="cb4-4"></span>
+<span id="cb4-5">data <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> pd.concat(</span>
+<span id="cb4-6">    [pd.DataFrame(result) <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">for</span> result <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">in</span> results],</span>
+<span id="cb4-7">    ignore_index<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="va" style="color: #111111;
+background-color: null;
+font-style: inherit;">True</span>,</span>
+<span id="cb4-8">)</span></code></pre></div></div>
+</div>
+<p>And finally, we’re going to create 2 plots that will give us an idea of how both versions of <code>gix blame</code> compare with respect to performance. In both plots, there’s a clearly visible speedup associated with the change. It’s also clearly visible that the speedup is much more pronounced for files nested a few directories deep.</p>
+</section>
+<section id="creating-a-boxplot" class="level2">
+<h2 class="anchored" data-anchor-id="creating-a-boxplot">Creating a boxplot</h2>
+<div id="76939906" class="cell" data-execution_count="4">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1">FIGURE_WIDTH <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">8</span></span>
+<span id="cb5-2">FIGURE_ASPECT <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> <span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1.6</span></span>
+<span id="cb5-3"></span>
+<span id="cb5-4">sns.set_theme(</span>
+<span id="cb5-5">    palette<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Paired"</span>,</span>
+<span id="cb5-6">    rc<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span>{<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"figure.figsize"</span>: (FIGURE_WIDTH, FIGURE_WIDTH <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> FIGURE_ASPECT)},</span>
+<span id="cb5-7">)</span></code></pre></div></div>
+</details>
+</div>
+<div id="49edccd9" class="cell" data-execution_count="5">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1">boxplot <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> sns.boxplot(x<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"time"</span>, y<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"path"</span>, hue<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"command"</span>, data<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span>data)</span>
+<span id="cb6-2">sns.despine(offset<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">10</span>, trim<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="va" style="color: #111111;
+background-color: null;
+font-style: inherit;">True</span>)</span>
+<span id="cb6-3">mpl.pyplot.tight_layout()</span>
+<span id="cb6-4">mpl.pyplot.show()</span></code></pre></div></div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="https://cruessler.github.io/posts/gix-blame-performance-improved-by-a-change-in-gix-diff/index_files/figure-html/cell-6-output-1.png" width="743" height="465" class="figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="creating-a-stripplot" class="level2">
+<h2 class="anchored" data-anchor-id="creating-a-stripplot">Creating a stripplot</h2>
+<div id="7e945662" class="cell" data-execution_count="6">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1">mpl.pyplot.figure(figsize<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span>(FIGURE_WIDTH <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> <span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0.75</span>, FIGURE_WIDTH <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> FIGURE_ASPECT))</span>
+<span id="cb7-2"></span>
+<span id="cb7-3">stripplot <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> sns.stripplot(</span>
+<span id="cb7-4">    x<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"time"</span>,</span>
+<span id="cb7-5">    y<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"path"</span>,</span>
+<span id="cb7-6">    hue<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"command"</span>,</span>
+<span id="cb7-7">    dodge<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="va" style="color: #111111;
+background-color: null;
+font-style: inherit;">True</span>,</span>
+<span id="cb7-8">    size<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2.5</span>,</span>
+<span id="cb7-9">    jitter<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0.2</span>,</span>
+<span id="cb7-10">    legend<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="va" style="color: #111111;
+background-color: null;
+font-style: inherit;">False</span>,</span>
+<span id="cb7-11">    data<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span>data,</span>
+<span id="cb7-12">)</span>
+<span id="cb7-13"></span>
+<span id="cb7-14">mpl.pyplot.show()</span></code></pre></div></div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="https://cruessler.github.io/posts/gix-blame-performance-improved-by-a-change-in-gix-diff/index_files/figure-html/cell-7-output-1.png" width="770" height="437" class="figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="conclusion" class="level2">
+<h2 class="anchored" data-anchor-id="conclusion">Conclusion</h2>
+<p>The aggregated data confirm the visual impression: for files in the repository’s root directory, there’s only a small performance improvement, but for deeper hierarchies, there’s large improvements of more than 20 % in some cases.</p>
+<div id="58863f00" class="cell" data-execution_count="7">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1">summary <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> (</span>
+<span id="cb8-2">    data</span>
+<span id="cb8-3">    .groupby([<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"path"</span>, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"command"</span>])</span>
+<span id="cb8-4">    .agg(</span>
+<span id="cb8-5">        mean<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"time"</span>, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"mean"</span>),</span>
+<span id="cb8-6">        stddev<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"time"</span>, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"std"</span>),</span>
+<span id="cb8-7">    )</span>
+<span id="cb8-8">    .reset_index()</span>
+<span id="cb8-9">)</span>
+<span id="cb8-10"></span>
+<span id="cb8-11">summary[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"mean_ms"</span>] <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> summary[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"mean"</span>] <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1000</span></span>
+<span id="cb8-12">summary[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"stddev_ms"</span>] <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> summary[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"stddev"</span>] <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1000</span></span>
+<span id="cb8-13"></span>
+<span id="cb8-14">wide <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> summary.pivot(</span>
+<span id="cb8-15">    index<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"path"</span>,</span>
+<span id="cb8-16">    columns<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"command"</span>,</span>
+<span id="cb8-17">    values<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span>[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"mean_ms"</span>, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"stddev_ms"</span>],</span>
+<span id="cb8-18">)</span>
+<span id="cb8-19"></span>
+<span id="cb8-20">table <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> pd.DataFrame({</span>
+<span id="cb8-21">    <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"baseline_mean_ms"</span>: wide[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"mean_ms"</span>][<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"baseline"</span>],</span>
+<span id="cb8-22">    <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"baseline_stddev_ms"</span>: wide[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"stddev_ms"</span>][<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"baseline"</span>],</span>
+<span id="cb8-23">    <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"comparison_mean_ms"</span>: wide[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"mean_ms"</span>][<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"comparison"</span>],</span>
+<span id="cb8-24">    <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"comparison_stddev_ms"</span>: wide[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"stddev_ms"</span>][<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"comparison"</span>],</span>
+<span id="cb8-25">})</span>
+<span id="cb8-26"></span>
+<span id="cb8-27">table[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Δ ms"</span>] <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> table[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"comparison_mean_ms"</span>] <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span> table[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"baseline_mean_ms"</span>]</span>
+<span id="cb8-28">table[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Δ %"</span>] <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> table[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Δ ms"</span>] <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> table[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"baseline_mean_ms"</span>] <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">100</span></span>
+<span id="cb8-29">table[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"ratio"</span>] <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> table[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"comparison_mean_ms"</span>] <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> table[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"baseline_mean_ms"</span>]</span>
+<span id="cb8-30"></span>
+<span id="cb8-31">table <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> table.sort_values(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Δ %"</span>, ascending<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="va" style="color: #111111;
+background-color: null;
+font-style: inherit;">False</span>)</span>
+<span id="cb8-32"></span>
+<span id="cb8-33">display_table <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> pd.DataFrame({</span>
+<span id="cb8-34">    <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"path"</span>: table.index.to_list(),</span>
+<span id="cb8-35">    <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"baseline mean ± sd"</span>: [</span>
+<span id="cb8-36">        <span class="ss" style="color: #20794D;
+background-color: null;
+font-style: inherit;">f"</span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">{</span>mean<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">:.2f}</span><span class="ss" style="color: #20794D;
+background-color: null;
+font-style: inherit;"> ± </span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">{</span>sd<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">:.2f}</span><span class="ss" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"</span></span>
+<span id="cb8-37">        <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">for</span> mean, sd <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">in</span> <span class="bu" style="color: null;
+background-color: null;
+font-style: inherit;">zip</span>(table[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"baseline_mean_ms"</span>], table[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"baseline_stddev_ms"</span>])</span>
+<span id="cb8-38">    ],</span>
+<span id="cb8-39">    <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"comparison mean ± sd"</span>: [</span>
+<span id="cb8-40">        <span class="ss" style="color: #20794D;
+background-color: null;
+font-style: inherit;">f"</span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">{</span>mean<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">:.2f}</span><span class="ss" style="color: #20794D;
+background-color: null;
+font-style: inherit;"> ± </span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">{</span>sd<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">:.2f}</span><span class="ss" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"</span></span>
+<span id="cb8-41">        <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">for</span> mean, sd <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">in</span> <span class="bu" style="color: null;
+background-color: null;
+font-style: inherit;">zip</span>(table[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"comparison_mean_ms"</span>], table[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"comparison_stddev_ms"</span>])</span>
+<span id="cb8-42">    ],</span>
+<span id="cb8-43">    <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Δ ms"</span>: table[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Δ ms"</span>].to_list(),</span>
+<span id="cb8-44">    <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Δ %"</span>: table[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Δ %"</span>].to_list(),</span>
+<span id="cb8-45">    <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"ratio"</span>: table[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"ratio"</span>].to_list(),</span>
+<span id="cb8-46">})</span>
+<span id="cb8-47"></span>
+<span id="cb8-48">display_table.style.<span class="bu" style="color: null;
+background-color: null;
+font-style: inherit;">format</span>({</span>
+<span id="cb8-49">    <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Δ ms"</span>: <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"</span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">{:+.2f}</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"</span>,</span>
+<span id="cb8-50">    <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Δ %"</span>: <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"</span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">{:+.2f}</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">%"</span>,</span>
+<span id="cb8-51">    <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"ratio"</span>: <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"</span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">{:.3f}</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">×"</span>,</span>
+<span id="cb8-52">}).background_gradient(</span>
+<span id="cb8-53">    subset<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span>[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Δ %"</span>],</span>
+<span id="cb8-54">    cmap<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Greens_r"</span>,</span>
+<span id="cb8-55">).hide(axis<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"index"</span>)</span></code></pre></div></div>
+</details>
+<div class="cell-output cell-output-display" data-execution_count="66">
+<style type="text/css">
+#T_09759_row0_col4 {
+  background-color: #f7fcf5;
+  color: #000000;
+}
+#T_09759_row1_col4 {
+  background-color: #f5fbf2;
+  color: #000000;
+}
+#T_09759_row2_col4 {
+  background-color: #f4fbf2;
+  color: #000000;
+}
+#T_09759_row3_col4 {
+  background-color: #f2faef;
+  color: #000000;
+}
+#T_09759_row4_col4 {
+  background-color: #95d391;
+  color: #000000;
+}
+#T_09759_row5_col4 {
+  background-color: #72c375;
+  color: #000000;
+}
+#T_09759_row6_col4 {
+  background-color: #077331;
+  color: #f1f1f1;
+}
+#T_09759_row7_col4 {
+  background-color: #00481d;
+  color: #f1f1f1;
+}
+#T_09759_row8_col4 {
+  background-color: #00441b;
+  color: #f1f1f1;
+}
+</style>
+
+<table id="T_09759" class="caption-top table table-sm table-striped small">
+<thead>
+<tr class="header">
+<th id="T_09759_level0_col0" class="col_heading level0 col0" data-quarto-table-cell-role="th">path</th>
+<th id="T_09759_level0_col1" class="col_heading level0 col1" data-quarto-table-cell-role="th">baseline mean ± sd</th>
+<th id="T_09759_level0_col2" class="col_heading level0 col2" data-quarto-table-cell-role="th">comparison mean ± sd</th>
+<th id="T_09759_level0_col3" class="col_heading level0 col3" data-quarto-table-cell-role="th">Δ ms</th>
+<th id="T_09759_level0_col4" class="col_heading level0 col4" data-quarto-table-cell-role="th">Δ %</th>
+<th id="T_09759_level0_col5" class="col_heading level0 col5" data-quarto-table-cell-role="th">ratio</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td id="T_09759_row0_col0" class="data row0 col0">README.md</td>
+<td id="T_09759_row0_col1" class="data row0 col1">103.66 ± 2.47</td>
+<td id="T_09759_row0_col2" class="data row0 col2">103.09 ± 2.01</td>
+<td id="T_09759_row0_col3" class="data row0 col3">-0.57</td>
+<td id="T_09759_row0_col4" class="data row0 col4">-0.55%</td>
+<td id="T_09759_row0_col5" class="data row0 col5">0.995×</td>
+</tr>
+<tr class="even">
+<td id="T_09759_row1_col0" class="data row1 col0">CHANGELOG.md</td>
+<td id="T_09759_row1_col1" class="data row1 col1">142.11 ± 2.74</td>
+<td id="T_09759_row1_col2" class="data row1 col2">140.84 ± 2.17</td>
+<td id="T_09759_row1_col3" class="data row1 col3">-1.28</td>
+<td id="T_09759_row1_col4" class="data row1 col4">-0.90%</td>
+<td id="T_09759_row1_col5" class="data row1 col5">0.991×</td>
+</tr>
+<tr class="odd">
+<td id="T_09759_row2_col0" class="data row2 col0">STABILITY.md</td>
+<td id="T_09759_row2_col1" class="data row2 col1">51.22 ± 1.57</td>
+<td id="T_09759_row2_col2" class="data row2 col2">50.72 ± 1.92</td>
+<td id="T_09759_row2_col3" class="data row2 col3">-0.51</td>
+<td id="T_09759_row2_col4" class="data row2 col4">-0.99%</td>
+<td id="T_09759_row2_col5" class="data row2 col5">0.990×</td>
+</tr>
+<tr class="even">
+<td id="T_09759_row3_col0" class="data row3 col0">Cargo.toml</td>
+<td id="T_09759_row3_col1" class="data row3 col1">93.16 ± 3.40</td>
+<td id="T_09759_row3_col2" class="data row3 col2">91.91 ± 2.18</td>
+<td id="T_09759_row3_col3" class="data row3 col3">-1.26</td>
+<td id="T_09759_row3_col4" class="data row3 col4">-1.35%</td>
+<td id="T_09759_row3_col5" class="data row3 col5">0.987×</td>
+</tr>
+<tr class="odd">
+<td id="T_09759_row4_col0" class="data row4 col0">gix-object/src/lib.rs</td>
+<td id="T_09759_row4_col1" class="data row4 col1">84.23 ± 2.18</td>
+<td id="T_09759_row4_col2" class="data row4 col2">76.44 ± 1.89</td>
+<td id="T_09759_row4_col3" class="data row4 col3">-7.79</td>
+<td id="T_09759_row4_col4" class="data row4 col4">-9.25%</td>
+<td id="T_09759_row4_col5" class="data row4 col5">0.907×</td>
+</tr>
+<tr class="even">
+<td id="T_09759_row5_col0" class="data row5 col0">gix-odb/src/store_impls/loose/write.rs</td>
+<td id="T_09759_row5_col1" class="data row5 col1">84.01 ± 2.44</td>
+<td id="T_09759_row5_col2" class="data row5 col2">74.44 ± 2.08</td>
+<td id="T_09759_row5_col3" class="data row5 col3">-9.57</td>
+<td id="T_09759_row5_col4" class="data row5 col4">-11.40%</td>
+<td id="T_09759_row5_col5" class="data row5 col5">0.886×</td>
+</tr>
+<tr class="odd">
+<td id="T_09759_row6_col0" class="data row6 col0">gix-path/src/env/mod.rs</td>
+<td id="T_09759_row6_col1" class="data row6 col1">44.55 ± 1.31</td>
+<td id="T_09759_row6_col2" class="data row6 col2">36.21 ± 1.50</td>
+<td id="T_09759_row6_col3" class="data row6 col3">-8.34</td>
+<td id="T_09759_row6_col4" class="data row6 col4">-18.72%</td>
+<td id="T_09759_row6_col5" class="data row6 col5">0.813×</td>
+</tr>
+<tr class="even">
+<td id="T_09759_row7_col0" class="data row7 col0">gix-index/tests/index/file/write.rs</td>
+<td id="T_09759_row7_col1" class="data row7 col1">62.93 ± 1.53</td>
+<td id="T_09759_row7_col2" class="data row7 col2">49.32 ± 1.42</td>
+<td id="T_09759_row7_col3" class="data row7 col3">-13.61</td>
+<td id="T_09759_row7_col4" class="data row7 col4">-21.62%</td>
+<td id="T_09759_row7_col5" class="data row7 col5">0.784×</td>
+</tr>
+<tr class="odd">
+<td id="T_09759_row8_col0" class="data row8 col0">gix-blame/src/file/function.rs</td>
+<td id="T_09759_row8_col1" class="data row8 col1">44.43 ± 1.53</td>
+<td id="T_09759_row8_col2" class="data row8 col2">34.69 ± 1.58</td>
+<td id="T_09759_row8_col3" class="data row8 col3">-9.74</td>
+<td id="T_09759_row8_col4" class="data row8 col4">-21.93%</td>
+<td id="T_09759_row8_col5" class="data row8 col5">0.781×</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+
+</section>
+
+ ]]></description>
+  <category>code</category>
+  <category>analysis</category>
+  <guid>https://cruessler.github.io/posts/gix-blame-performance-improved-by-a-change-in-gix-diff/</guid>
+  <pubDate>Sat, 14 Mar 2026 00:00:00 GMT</pubDate>
+</item>
+<item>
+  <title>gix-blame performance with imara-diff 0.1 and 0.2</title>
+  <dc:creator>Christoph Rüßler</dc:creator>
+  <link>https://cruessler.github.io/posts/gix-blame-performance-with-imara-diff-0-1-and-0-2/</link>
+  <description><![CDATA[ 
+
+
+
+
+
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>This post is a modernized version of an <a href="https://c.rubler.net/blog/2026/01/25/gix-blame-performance-with-imara-diff-0-1-and-0-2.html">earlier post</a> of mine in my main blog.</p>
+<p>This post’s “published” date reflects the date the original post was published.</p>
+</div>
+</div>
+<p>Recently, we started the process of upgrading <code>gitoxide</code>’s dependency on <code>imara-diff</code> from 0.1.8 to 0.2.0 (tracked in <a href="https://github.com/GitoxideLabs/gitoxide/issues/2308">this issue</a>). Because <code>imara-diff</code>’s API has changed significantly, the changes are currently behind a feature flag. What I’ve been wondering, though, is whether this update has any impact on <code>gix-blame</code>’s performance as <code>gix-blame</code> spends a lot of time diffing two versions of a file.</p>
+<section id="running-the-benchmark" class="level2">
+<h2 class="anchored" data-anchor-id="running-the-benchmark">Running the benchmark</h2>
+<p>In order to collect some data, I compiled two versions of the <code>gix</code> binary via <code>cargo build --release --features blame-experimental</code> and <code>cargo build --release</code>. Then I used <code>hyperfine</code> to run <code>gix blame</code> on a set of 9 files in my local copy of the <code>gitoxide</code> repo.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">env</span> GIT_DIR=<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"</span><span class="va" style="color: #111111;
+background-color: null;
+font-style: inherit;">$HOME</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">/github/Byron/gitoxide/.git"</span> BASELINE_EXECUTABLE=<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"</span><span class="va" style="color: #111111;
+background-color: null;
+font-style: inherit;">$HOME</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">/bin/gix-blame-2026-01-25-3b6650a66"</span> COMPARISON_EXECUTABLE=<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"</span><span class="va" style="color: #111111;
+background-color: null;
+font-style: inherit;">$HOME</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">/bin/gix-blame-experimental-2026-01-25-3b6650a66"</span> ./run_benchmark.py</span></code></pre></div></div>
+<div id="7f138c62" class="cell" data-execution_count="1">
+<details class="code-fold">
+<summary><code>run_benchmark.py</code>, the script used to benchmark both versions of <code>gix blame</code></summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">#!/usr/bin/env python</span></span>
+<span id="cb2-2"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># /// script</span></span>
+<span id="cb2-3"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># requires-python = "&gt;=3.13"</span></span>
+<span id="cb2-4"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># ///</span></span>
+<span id="cb2-5"></span>
+<span id="cb2-6"><span class="im" style="color: #00769E;
+background-color: null;
+font-style: inherit;">import</span> os</span>
+<span id="cb2-7"></span>
+<span id="cb2-8"><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">def</span> run(path, i):</span>
+<span id="cb2-9">    os.system(</span>
+<span id="cb2-10">        <span class="ss" style="color: #20794D;
+background-color: null;
+font-style: inherit;">f'hyperfine --parameter-list command "$BASELINE_EXECUTABLE","$COMPARISON_EXECUTABLE" --parameter-list path </span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">{</span>path<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">}</span><span class="ss" style="color: #20794D;
+background-color: null;
+font-style: inherit;"> "</span><span class="ch" style="color: #20794D;
+background-color: null;
+font-style: inherit;">{{</span><span class="ss" style="color: #20794D;
+background-color: null;
+font-style: inherit;">command</span><span class="ch" style="color: #20794D;
+background-color: null;
+font-style: inherit;">}}</span><span class="ss" style="color: #20794D;
+background-color: null;
+font-style: inherit;"> blame </span><span class="ch" style="color: #20794D;
+background-color: null;
+font-style: inherit;">{{</span><span class="ss" style="color: #20794D;
+background-color: null;
+font-style: inherit;">path</span><span class="ch" style="color: #20794D;
+background-color: null;
+font-style: inherit;">}}</span><span class="ss" style="color: #20794D;
+background-color: null;
+font-style: inherit;">" --command-name baseline --command-name comparison --export-json benchmark-</span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">{</span>i<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">}</span><span class="ss" style="color: #20794D;
+background-color: null;
+font-style: inherit;">.json'</span></span>
+<span id="cb2-11">    )</span>
+<span id="cb2-12"></span>
+<span id="cb2-13"><span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">for</span> i, path <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">in</span> <span class="bu" style="color: null;
+background-color: null;
+font-style: inherit;">enumerate</span>(</span>
+<span id="cb2-14">    [</span>
+<span id="cb2-15">        <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"CHANGELOG.md"</span>,</span>
+<span id="cb2-16">        <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"STABILITY.md"</span>,</span>
+<span id="cb2-17">        <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"README.md"</span>,</span>
+<span id="cb2-18">        <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Cargo.toml"</span>,</span>
+<span id="cb2-19">        <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"gix-blame/src/file/function.rs"</span>,</span>
+<span id="cb2-20">        <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"gix-path/src/env/mod.rs"</span>,</span>
+<span id="cb2-21">        <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"gix-index/tests/index/file/write.rs"</span>,</span>
+<span id="cb2-22">        <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"gix-object/src/lib.rs"</span>,</span>
+<span id="cb2-23">        <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"gix-odb/src/store_impls/loose/write.rs"</span>,</span>
+<span id="cb2-24">    ]</span>
+<span id="cb2-25">):</span>
+<span id="cb2-26">    run(path, i <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">+</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>)</span></code></pre></div></div>
+</details>
+</div>
+<p>This will create a couple of Markdown files, <code>benchmark-1.json</code> through <code>benchmark-9.json</code>.</p>
+</section>
+<section id="loading-the-data" class="level2">
+<h2 class="anchored" data-anchor-id="loading-the-data">Loading the data</h2>
+<p>Then, in order to work with these files, we’re going to use <code>numpy</code> and <code>pandas</code> to load them into <code>data</code>.</p>
+<div id="6f32b77f" class="cell" data-execution_count="2">
+<details class="code-fold">
+<summary>A few helper functions for loading the data</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><span class="im" style="color: #00769E;
+background-color: null;
+font-style: inherit;">import</span> numpy <span class="im" style="color: #00769E;
+background-color: null;
+font-style: inherit;">as</span> np</span>
+<span id="cb3-2"><span class="im" style="color: #00769E;
+background-color: null;
+font-style: inherit;">import</span> pandas <span class="im" style="color: #00769E;
+background-color: null;
+font-style: inherit;">as</span> pd</span>
+<span id="cb3-3"></span>
+<span id="cb3-4"><span class="im" style="color: #00769E;
+background-color: null;
+font-style: inherit;">import</span> matplotlib <span class="im" style="color: #00769E;
+background-color: null;
+font-style: inherit;">as</span> mpl</span>
+<span id="cb3-5"></span>
+<span id="cb3-6"><span class="im" style="color: #00769E;
+background-color: null;
+font-style: inherit;">import</span> seaborn <span class="im" style="color: #00769E;
+background-color: null;
+font-style: inherit;">as</span> sns</span>
+<span id="cb3-7"></span>
+<span id="cb3-8"><span class="im" style="color: #00769E;
+background-color: null;
+font-style: inherit;">import</span> json</span>
+<span id="cb3-9"></span>
+<span id="cb3-10"><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">def</span> load_results(filename):</span>
+<span id="cb3-11">    <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">with</span> <span class="bu" style="color: null;
+background-color: null;
+font-style: inherit;">open</span>(filename) <span class="im" style="color: #00769E;
+background-color: null;
+font-style: inherit;">as</span> f:</span>
+<span id="cb3-12">        <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">return</span> json.load(f)[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"results"</span>]</span>
+<span id="cb3-13"></span>
+<span id="cb3-14"><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">def</span> extract_data_points(result):</span>
+<span id="cb3-15">    command <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> result[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"command"</span>]</span>
+<span id="cb3-16">    path <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> result[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"parameters"</span>][<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"path"</span>]</span>
+<span id="cb3-17"></span>
+<span id="cb3-18">    <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">return</span> {<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"command"</span>: command, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"path"</span>: path, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"time"</span>: result[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"times"</span>]}</span></code></pre></div></div>
+</details>
+</div>
+<div id="5c744774" class="cell" data-execution_count="3">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1">filenames <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> [<span class="ss" style="color: #20794D;
+background-color: null;
+font-style: inherit;">f"benchmark-</span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">{</span>i<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">}</span><span class="ss" style="color: #20794D;
+background-color: null;
+font-style: inherit;">.json"</span> <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">for</span> i <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">in</span> <span class="bu" style="color: null;
+background-color: null;
+font-style: inherit;">range</span>(<span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1</span>, <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">10</span>)]</span>
+<span id="cb4-2">results <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> [load_results(filename) <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">for</span> filename <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">in</span> filenames]</span>
+<span id="cb4-3">results <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> [extract_data_points(result) <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">for</span> result <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">in</span> np.concatenate(results)]</span>
+<span id="cb4-4"></span>
+<span id="cb4-5">data <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> pd.concat(</span>
+<span id="cb4-6">    [pd.DataFrame(result) <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">for</span> result <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">in</span> results],</span>
+<span id="cb4-7">    ignore_index<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="va" style="color: #111111;
+background-color: null;
+font-style: inherit;">True</span>,</span>
+<span id="cb4-8">)</span></code></pre></div></div>
+</div>
+<p>And finally, we’re going to create 2 plots that will give us an idea of how both versions of <code>gix blame</code> compare with respect to performance. Looking in particular at the boxplot, it seems that performance got better for files that are changed frequently, such as <code>CHANGELOG.md</code> and <code>README.md</code>.</p>
+</section>
+<section id="creating-a-boxplot" class="level2">
+<h2 class="anchored" data-anchor-id="creating-a-boxplot">Creating a boxplot</h2>
+<div id="c2e1db62" class="cell" data-execution_count="4">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1">FIGURE_WIDTH <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">8</span></span>
+<span id="cb5-2">FIGURE_ASPECT <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> <span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1.6</span></span>
+<span id="cb5-3"></span>
+<span id="cb5-4">sns.set_theme(</span>
+<span id="cb5-5">    palette<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Paired"</span>,</span>
+<span id="cb5-6">    rc<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span>{<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"figure.figsize"</span>: (FIGURE_WIDTH, FIGURE_WIDTH <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> FIGURE_ASPECT)},</span>
+<span id="cb5-7">)</span></code></pre></div></div>
+</details>
+</div>
+<div id="5f0f0108" class="cell" data-execution_count="5">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1">boxplot <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> sns.boxplot(x<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"time"</span>, y<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"path"</span>, hue<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"command"</span>, data<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span>data)</span>
+<span id="cb6-2">sns.despine(offset<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">10</span>, trim<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="va" style="color: #111111;
+background-color: null;
+font-style: inherit;">True</span>)</span>
+<span id="cb6-3">mpl.pyplot.tight_layout()</span>
+<span id="cb6-4">mpl.pyplot.show()</span></code></pre></div></div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="https://cruessler.github.io/posts/gix-blame-performance-with-imara-diff-0-1-and-0-2/index_files/figure-html/cell-6-output-1.png" width="743" height="465" class="figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="creating-a-stripplot" class="level2">
+<h2 class="anchored" data-anchor-id="creating-a-stripplot">Creating a stripplot</h2>
+<div id="f61f972a" class="cell" data-execution_count="6">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1">mpl.pyplot.figure(figsize<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span>(FIGURE_WIDTH <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> <span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0.75</span>, FIGURE_WIDTH <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> FIGURE_ASPECT))</span>
+<span id="cb7-2"></span>
+<span id="cb7-3">stripplot <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> sns.stripplot(</span>
+<span id="cb7-4">    x<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"time"</span>,</span>
+<span id="cb7-5">    y<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"path"</span>,</span>
+<span id="cb7-6">    hue<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"command"</span>,</span>
+<span id="cb7-7">    dodge<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="va" style="color: #111111;
+background-color: null;
+font-style: inherit;">True</span>,</span>
+<span id="cb7-8">    size<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">2.5</span>,</span>
+<span id="cb7-9">    jitter<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0.2</span>,</span>
+<span id="cb7-10">    legend<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="va" style="color: #111111;
+background-color: null;
+font-style: inherit;">False</span>,</span>
+<span id="cb7-11">    data<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span>data,</span>
+<span id="cb7-12">)</span>
+<span id="cb7-13"></span>
+<span id="cb7-14">mpl.pyplot.show()</span></code></pre></div></div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="https://cruessler.github.io/posts/gix-blame-performance-with-imara-diff-0-1-and-0-2/index_files/figure-html/cell-7-output-1.png" width="770" height="437" class="figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="conclusion" class="level2">
+<h2 class="anchored" data-anchor-id="conclusion">Conclusion</h2>
+<p>It seems that the version using <code>imara-diff</code> 0.2 has a slight advantage over the version using <code>imara-diff</code> 0.1 when it comes to some of the files that have changed a lot over the course of <code>gitoxide</code>’s history, such as <code>CHANGELOG.md</code> or <code>README.md</code>. <code>Cargo.toml</code>, on the other hand, doesn’t fit that diagnosis. For files that changed less frequently, the situation is much closer, so I don’t want to draw too many conclusions.</p>
+<div id="50288e5e" class="cell" data-execution_count="7">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1">summary <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> (</span>
+<span id="cb8-2">    data</span>
+<span id="cb8-3">    .groupby([<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"path"</span>, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"command"</span>])</span>
+<span id="cb8-4">    .agg(</span>
+<span id="cb8-5">        mean<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"time"</span>, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"mean"</span>),</span>
+<span id="cb8-6">        stddev<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"time"</span>, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"std"</span>),</span>
+<span id="cb8-7">    )</span>
+<span id="cb8-8">    .reset_index()</span>
+<span id="cb8-9">)</span>
+<span id="cb8-10"></span>
+<span id="cb8-11">summary[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"mean_ms"</span>] <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> summary[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"mean"</span>] <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1000</span></span>
+<span id="cb8-12">summary[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"stddev_ms"</span>] <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> summary[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"stddev"</span>] <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">1000</span></span>
+<span id="cb8-13"></span>
+<span id="cb8-14">wide <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> summary.pivot(</span>
+<span id="cb8-15">    index<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"path"</span>,</span>
+<span id="cb8-16">    columns<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"command"</span>,</span>
+<span id="cb8-17">    values<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span>[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"mean_ms"</span>, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"stddev_ms"</span>],</span>
+<span id="cb8-18">)</span>
+<span id="cb8-19"></span>
+<span id="cb8-20">table <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> pd.DataFrame({</span>
+<span id="cb8-21">    <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"baseline_mean_ms"</span>: wide[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"mean_ms"</span>][<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"baseline"</span>],</span>
+<span id="cb8-22">    <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"baseline_stddev_ms"</span>: wide[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"stddev_ms"</span>][<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"baseline"</span>],</span>
+<span id="cb8-23">    <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"comparison_mean_ms"</span>: wide[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"mean_ms"</span>][<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"comparison"</span>],</span>
+<span id="cb8-24">    <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"comparison_stddev_ms"</span>: wide[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"stddev_ms"</span>][<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"comparison"</span>],</span>
+<span id="cb8-25">})</span>
+<span id="cb8-26"></span>
+<span id="cb8-27">table[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Δ ms"</span>] <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> table[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"comparison_mean_ms"</span>] <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">-</span> table[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"baseline_mean_ms"</span>]</span>
+<span id="cb8-28">table[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Δ %"</span>] <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> table[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Δ ms"</span>] <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> table[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"baseline_mean_ms"</span>] <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">100</span></span>
+<span id="cb8-29">table[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"ratio"</span>] <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> table[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"comparison_mean_ms"</span>] <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">/</span> table[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"baseline_mean_ms"</span>]</span>
+<span id="cb8-30"></span>
+<span id="cb8-31">table <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> table.sort_values(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Δ %"</span>, ascending<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="va" style="color: #111111;
+background-color: null;
+font-style: inherit;">False</span>)</span>
+<span id="cb8-32"></span>
+<span id="cb8-33">display_table <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> pd.DataFrame({</span>
+<span id="cb8-34">    <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"path"</span>: table.index.to_list(),</span>
+<span id="cb8-35">    <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"baseline mean ± sd"</span>: [</span>
+<span id="cb8-36">        <span class="ss" style="color: #20794D;
+background-color: null;
+font-style: inherit;">f"</span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">{</span>mean<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">:.2f}</span><span class="ss" style="color: #20794D;
+background-color: null;
+font-style: inherit;"> ± </span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">{</span>sd<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">:.2f}</span><span class="ss" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"</span></span>
+<span id="cb8-37">        <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">for</span> mean, sd <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">in</span> <span class="bu" style="color: null;
+background-color: null;
+font-style: inherit;">zip</span>(table[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"baseline_mean_ms"</span>], table[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"baseline_stddev_ms"</span>])</span>
+<span id="cb8-38">    ],</span>
+<span id="cb8-39">    <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"comparison mean ± sd"</span>: [</span>
+<span id="cb8-40">        <span class="ss" style="color: #20794D;
+background-color: null;
+font-style: inherit;">f"</span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">{</span>mean<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">:.2f}</span><span class="ss" style="color: #20794D;
+background-color: null;
+font-style: inherit;"> ± </span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">{</span>sd<span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">:.2f}</span><span class="ss" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"</span></span>
+<span id="cb8-41">        <span class="cf" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">for</span> mean, sd <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">in</span> <span class="bu" style="color: null;
+background-color: null;
+font-style: inherit;">zip</span>(table[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"comparison_mean_ms"</span>], table[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"comparison_stddev_ms"</span>])</span>
+<span id="cb8-42">    ],</span>
+<span id="cb8-43">    <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Δ ms"</span>: table[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Δ ms"</span>].to_list(),</span>
+<span id="cb8-44">    <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Δ %"</span>: table[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Δ %"</span>].to_list(),</span>
+<span id="cb8-45">    <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"ratio"</span>: table[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"ratio"</span>].to_list(),</span>
+<span id="cb8-46">})</span>
+<span id="cb8-47"></span>
+<span id="cb8-48">delta <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> display_table[<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Δ %"</span>]</span>
+<span id="cb8-49"></span>
+<span id="cb8-50">worse_rows <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> delta[delta <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">&gt;</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>].index</span>
+<span id="cb8-51">better_rows <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> delta[delta <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">&lt;</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">0</span>].index</span>
+<span id="cb8-52"></span>
+<span id="cb8-53">display_table.style.<span class="bu" style="color: null;
+background-color: null;
+font-style: inherit;">format</span>({</span>
+<span id="cb8-54">    <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Δ ms"</span>: <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"</span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">{:+.2f}</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"</span>,</span>
+<span id="cb8-55">    <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Δ %"</span>: <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"</span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">{:+.2f}</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">%"</span>,</span>
+<span id="cb8-56">    <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"ratio"</span>: <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"</span><span class="sc" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">{:.3f}</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">×"</span>,</span>
+<span id="cb8-57">}).background_gradient(</span>
+<span id="cb8-58">    subset<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span>pd.IndexSlice[worse_rows, [<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Δ %"</span>]],</span>
+<span id="cb8-59">    cmap<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Reds"</span>,</span>
+<span id="cb8-60">).background_gradient(</span>
+<span id="cb8-61">    subset<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span>pd.IndexSlice[better_rows, [<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Δ %"</span>]],</span>
+<span id="cb8-62">    cmap<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Greens_r"</span>,</span>
+<span id="cb8-63">).hide(axis<span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"index"</span>)</span></code></pre></div></div>
+</details>
+<div class="cell-output cell-output-display" data-execution_count="95">
+<style type="text/css">
+#T_6cc2d_row0_col4 {
+  background-color: #67000d;
+  color: #f1f1f1;
+}
+#T_6cc2d_row1_col4 {
+  background-color: #d72322;
+  color: #f1f1f1;
+}
+#T_6cc2d_row2_col4 {
+  background-color: #fb7858;
+  color: #f1f1f1;
+}
+#T_6cc2d_row3_col4 {
+  background-color: #fee5d8;
+  color: #000000;
+}
+#T_6cc2d_row4_col4 {
+  background-color: #fff5f0;
+  color: #000000;
+}
+#T_6cc2d_row5_col4 {
+  background-color: #f7fcf5;
+  color: #000000;
+}
+#T_6cc2d_row6_col4 {
+  background-color: #d5efcf;
+  color: #000000;
+}
+#T_6cc2d_row7_col4 {
+  background-color: #84cc83;
+  color: #000000;
+}
+#T_6cc2d_row8_col4 {
+  background-color: #00441b;
+  color: #f1f1f1;
+}
+</style>
+
+<table id="T_6cc2d" class="caption-top table table-sm table-striped small">
+<thead>
+<tr class="header">
+<th id="T_6cc2d_level0_col0" class="col_heading level0 col0" data-quarto-table-cell-role="th">path</th>
+<th id="T_6cc2d_level0_col1" class="col_heading level0 col1" data-quarto-table-cell-role="th">baseline mean ± sd</th>
+<th id="T_6cc2d_level0_col2" class="col_heading level0 col2" data-quarto-table-cell-role="th">comparison mean ± sd</th>
+<th id="T_6cc2d_level0_col3" class="col_heading level0 col3" data-quarto-table-cell-role="th">Δ ms</th>
+<th id="T_6cc2d_level0_col4" class="col_heading level0 col4" data-quarto-table-cell-role="th">Δ %</th>
+<th id="T_6cc2d_level0_col5" class="col_heading level0 col5" data-quarto-table-cell-role="th">ratio</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td id="T_6cc2d_row0_col0" class="data row0 col0">gix-object/src/lib.rs</td>
+<td id="T_6cc2d_row0_col1" class="data row0 col1">94.33 ± 2.62</td>
+<td id="T_6cc2d_row0_col2" class="data row0 col2">94.93 ± 2.32</td>
+<td id="T_6cc2d_row0_col3" class="data row0 col3">+0.59</td>
+<td id="T_6cc2d_row0_col4" class="data row0 col4">+0.63%</td>
+<td id="T_6cc2d_row0_col5" class="data row0 col5">1.006×</td>
+</tr>
+<tr class="even">
+<td id="T_6cc2d_row1_col0" class="data row1 col0">gix-odb/src/store_impls/loose/write.rs</td>
+<td id="T_6cc2d_row1_col1" class="data row1 col1">93.75 ± 2.27</td>
+<td id="T_6cc2d_row1_col2" class="data row1 col2">94.22 ± 2.30</td>
+<td id="T_6cc2d_row1_col3" class="data row1 col3">+0.46</td>
+<td id="T_6cc2d_row1_col4" class="data row1 col4">+0.50%</td>
+<td id="T_6cc2d_row1_col5" class="data row1 col5">1.005×</td>
+</tr>
+<tr class="odd">
+<td id="T_6cc2d_row2_col0" class="data row2 col0">Cargo.toml</td>
+<td id="T_6cc2d_row2_col1" class="data row2 col1">102.49 ± 1.87</td>
+<td id="T_6cc2d_row2_col2" class="data row2 col2">102.87 ± 2.39</td>
+<td id="T_6cc2d_row2_col3" class="data row2 col3">+0.39</td>
+<td id="T_6cc2d_row2_col4" class="data row2 col4">+0.38%</td>
+<td id="T_6cc2d_row2_col5" class="data row2 col5">1.004×</td>
+</tr>
+<tr class="even">
+<td id="T_6cc2d_row3_col0" class="data row3 col0">gix-index/tests/index/file/write.rs</td>
+<td id="T_6cc2d_row3_col1" class="data row3 col1">69.46 ± 2.11</td>
+<td id="T_6cc2d_row3_col2" class="data row3 col2">69.61 ± 1.88</td>
+<td id="T_6cc2d_row3_col3" class="data row3 col3">+0.15</td>
+<td id="T_6cc2d_row3_col4" class="data row3 col4">+0.21%</td>
+<td id="T_6cc2d_row3_col5" class="data row3 col5">1.002×</td>
+</tr>
+<tr class="odd">
+<td id="T_6cc2d_row4_col0" class="data row4 col0">gix-path/src/env/mod.rs</td>
+<td id="T_6cc2d_row4_col1" class="data row4 col1">49.05 ± 1.76</td>
+<td id="T_6cc2d_row4_col2" class="data row4 col2">49.13 ± 1.57</td>
+<td id="T_6cc2d_row4_col3" class="data row4 col3">+0.08</td>
+<td id="T_6cc2d_row4_col4" class="data row4 col4">+0.17%</td>
+<td id="T_6cc2d_row4_col5" class="data row4 col5">1.002×</td>
+</tr>
+<tr class="even">
+<td id="T_6cc2d_row5_col0" class="data row5 col0">gix-blame/src/file/function.rs</td>
+<td id="T_6cc2d_row5_col1" class="data row5 col1">48.02 ± 1.39</td>
+<td id="T_6cc2d_row5_col2" class="data row5 col2">47.88 ± 1.80</td>
+<td id="T_6cc2d_row5_col3" class="data row5 col3">-0.13</td>
+<td id="T_6cc2d_row5_col4" class="data row5 col4">-0.28%</td>
+<td id="T_6cc2d_row5_col5" class="data row5 col5">0.997×</td>
+</tr>
+<tr class="odd">
+<td id="T_6cc2d_row6_col0" class="data row6 col0">STABILITY.md</td>
+<td id="T_6cc2d_row6_col1" class="data row6 col1">53.76 ± 1.81</td>
+<td id="T_6cc2d_row6_col2" class="data row6 col2">53.09 ± 1.93</td>
+<td id="T_6cc2d_row6_col3" class="data row6 col3">-0.66</td>
+<td id="T_6cc2d_row6_col4" class="data row6 col4">-1.24%</td>
+<td id="T_6cc2d_row6_col5" class="data row6 col5">0.988×</td>
+</tr>
+<tr class="even">
+<td id="T_6cc2d_row7_col0" class="data row7 col0">README.md</td>
+<td id="T_6cc2d_row7_col1" class="data row7 col1">113.28 ± 2.89</td>
+<td id="T_6cc2d_row7_col2" class="data row7 col2">110.43 ± 3.14</td>
+<td id="T_6cc2d_row7_col3" class="data row7 col3">-2.85</td>
+<td id="T_6cc2d_row7_col4" class="data row7 col4">-2.52%</td>
+<td id="T_6cc2d_row7_col5" class="data row7 col5">0.975×</td>
+</tr>
+<tr class="odd">
+<td id="T_6cc2d_row8_col0" class="data row8 col0">CHANGELOG.md</td>
+<td id="T_6cc2d_row8_col1" class="data row8 col1">158.94 ± 3.23</td>
+<td id="T_6cc2d_row8_col2" class="data row8 col2">150.66 ± 3.58</td>
+<td id="T_6cc2d_row8_col3" class="data row8 col3">-8.28</td>
+<td id="T_6cc2d_row8_col4" class="data row8 col4">-5.21%</td>
+<td id="T_6cc2d_row8_col5" class="data row8 col5">0.948×</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+
+</section>
+
+ ]]></description>
+  <category>code</category>
+  <category>analysis</category>
+  <guid>https://cruessler.github.io/posts/gix-blame-performance-with-imara-diff-0-1-and-0-2/</guid>
+  <pubDate>Sun, 25 Jan 2026 00:00:00 GMT</pubDate>
 </item>
 </channel>
 </rss>

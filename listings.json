@@ -2,7 +2,9 @@
   {
     "listing": "/index.html",
     "items": [
-      "/posts/gix-blame-march-2026-through-july-2026/index.html"
+      "/posts/gix-blame-march-2026-through-july-2026/index.html",
+      "/posts/gix-blame-performance-improved-by-a-change-in-gix-diff/index.html",
+      "/posts/gix-blame-performance-with-imara-diff-0-1-and-0-2/index.html"
     ]
   }
 ]

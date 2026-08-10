@@ -7,9 +7,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 <meta name="author" content="Christoph Rüßler">
-<meta name="dcterms.date" content="2026-07-19">
+<meta name="dcterms.date" content="2026-01-25">
 
-<title>gix-blame performance March 2026 through July 2026 – Performance analyses of gitoxide</title>
+<title>gix-blame performance with imara-diff 0.1 and 0.2 – Performance analyses of gitoxide</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -155,7 +155,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <header id="title-block-header" class="quarto-title-block default page-columns page-full">
   <div class="quarto-title-banner page-columns page-full">
     <div class="quarto-title column-body">
-      <h1 class="title"><code>gix-blame</code> performance March 2026 through July 2026</h1>
+      <h1 class="title"><code>gix-blame</code> performance with <code>imara-diff</code> 0.1 and 0.2</h1>
                                 <div class="quarto-categories">
                 <div class="quarto-category">code</div>
                 <div class="quarto-category">analysis</div>
@@ -176,7 +176,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <div>
       <div class="quarto-title-meta-heading">Published</div>
       <div class="quarto-title-meta-contents">
-        <p class="date">July 19, 2026</p>
+        <p class="date">January 25, 2026</p>
       </div>
     </div>
     
@@ -211,16 +211,16 @@ Note
 </div>
 </div>
 <div class="callout-body-container callout-body">
-<p>If you’re wondering why there’s earlier posts in this blog even though the first paragraph mentions this is the first post: the other, earlier posts were published on my main blog before this blog existed and then later imported with their original publication date.</p>
+<p>This post is a modernized version of an <a href="https://c.rubler.net/blog/2026/01/25/gix-blame-performance-with-imara-diff-0-1-and-0-2.html">earlier post</a> of mine in my main blog.</p>
+<p>This post’s “published” date reflects the date the original post was published.</p>
 </div>
 </div>
-<p>This is the first post in a new blog in which I plan to infrequently post performance analyses related to <a href="https://github.com/GitoxideLabs/gitoxide.git"><code>gitoxide</code></a>. This post is largely a port of existing code I used in two previous blog posts (<a href="https://c.rubler.net/blog/2026/01/25/gix-blame-performance-with-imara-diff-0-1-and-0-2.html">one measuring the difference between using <code>imara-diff</code> 0.1 and 0.2</a>, <a href="https://c.rubler.net/blog/2026/03/14/gix-blame-performance-improved-by-a-change-in-gix-diff.html">another one measuring the effects of optimizing tree diffing by skipping identical subtrees</a>), and it mainly exists to exercise the new publishing pipeline. The reason I’m now starting this separate blog is that my main blog runs on Jekyll which is not as well suited to the kinds of analyses that I want to work on from time to time as Quarto which is the software behind this new blog.</p>
-<p>In this post, I’m going to compare <code>gix blame</code> at commit <a href="https://github.com/GitoxideLabs/gitoxide/commit/e63d487fb1b1425a9458fc7400517ad2c0280fd2"><code>e63d487fb</code> (from February 16, 2026)</a> with <code>gix blame</code> at commit <a href="https://github.com/GitoxideLabs/gitoxide/commit/9949e9fdfa27a6630a8a12f7da07cbdd5c03aeed"><code>9949e9fdf</code> (from July 19, 2026)</a> (the latter chosen because it happened to be <code>HEAD</code> when I started writing this post). Specifically, I’m going to compare the performance of <code>gix blame</code> on the same set of 9 files that I used for the benchmarks of my earlier posts.</p>
+<p>Recently, we started the process of upgrading <code>gitoxide</code>’s dependency on <code>imara-diff</code> from 0.1.8 to 0.2.0 (tracked in <a href="https://github.com/GitoxideLabs/gitoxide/issues/2308">this issue</a>). Because <code>imara-diff</code>’s API has changed significantly, the changes are currently behind a feature flag. What I’ve been wondering, though, is whether this update has any impact on <code>gix-blame</code>’s performance as <code>gix-blame</code> spends a lot of time diffing two versions of a file.</p>
 <section id="running-the-benchmark" class="level2">
 <h2 class="anchored" data-anchor-id="running-the-benchmark">Running the benchmark</h2>
-<p>After compiling both executables with <code>cargo build --release --locked</code>, I ran the following script to collect some data using <code>hyperfine</code>.</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">env</span> GIT_DIR=<span class="st">"</span><span class="va">$HOME</span><span class="st">/github/Byron/gitoxide/.git"</span> BASELINE_EXECUTABLE=<span class="st">"</span><span class="va">$HOME</span><span class="st">/bin/gix-2026-07-20-e63d487fb"</span> COMPARISON_EXECUTABLE=<span class="st">"</span><span class="va">$HOME</span><span class="st">/bin/gix-2026-07-20-9949e9fdf"</span> ./run_benchmark.py</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div id="705d3aa9" class="cell" data-execution_count="1">
+<p>In order to collect some data, I compiled two versions of the <code>gix</code> binary via <code>cargo build --release --features blame-experimental</code> and <code>cargo build --release</code>. Then I used <code>hyperfine</code> to run <code>gix blame</code> on a set of 9 files in my local copy of the <code>gitoxide</code> repo.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">env</span> GIT_DIR=<span class="st">"</span><span class="va">$HOME</span><span class="st">/github/Byron/gitoxide/.git"</span> BASELINE_EXECUTABLE=<span class="st">"</span><span class="va">$HOME</span><span class="st">/bin/gix-blame-2026-01-25-3b6650a66"</span> COMPARISON_EXECUTABLE=<span class="st">"</span><span class="va">$HOME</span><span class="st">/bin/gix-blame-experimental-2026-01-25-3b6650a66"</span> ./run_benchmark.py</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div id="7f138c62" class="cell" data-execution_count="1">
 <details class="code-fold">
 <summary><code>run_benchmark.py</code>, the script used to benchmark both versions of <code>gix blame</code></summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co">#!/usr/bin/env python</span></span>
@@ -256,7 +256,7 @@ Note
 <section id="loading-the-data" class="level2">
 <h2 class="anchored" data-anchor-id="loading-the-data">Loading the data</h2>
 <p>Then, in order to work with these files, we’re going to use <code>numpy</code> and <code>pandas</code> to load them into <code>data</code>.</p>
-<div id="8d0d5384" class="cell" data-execution_count="2">
+<div id="6f32b77f" class="cell" data-execution_count="2">
 <details class="code-fold">
 <summary>A few helper functions for loading the data</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
@@ -279,7 +279,7 @@ Note
 <span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> {<span class="st">"command"</span>: command, <span class="st">"path"</span>: path, <span class="st">"time"</span>: result[<span class="st">"times"</span>]}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 </div>
-<div id="6dc474c4" class="cell" data-execution_count="3">
+<div id="5c744774" class="cell" data-execution_count="3">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>filenames <span class="op">=</span> [<span class="ss">f"benchmark-</span><span class="sc">{</span>i<span class="sc">}</span><span class="ss">.json"</span> <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">1</span>, <span class="dv">10</span>)]</span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>results <span class="op">=</span> [load_results(filename) <span class="cf">for</span> filename <span class="kw">in</span> filenames]</span>
 <span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>results <span class="op">=</span> [extract_data_points(result) <span class="cf">for</span> result <span class="kw">in</span> np.concatenate(results)]</span>
@@ -289,11 +289,11 @@ Note
 <span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>    ignore_index<span class="op">=</span><span class="va">True</span>,</span>
 <span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<p>And finally, we’re going to create 2 plots that will give us an idea of how both versions of <code>gix blame</code> compare with respect to performance. Looking in particular at the boxplot, it seems that performance slightly regressed between March and July.</p>
+<p>And finally, we’re going to create 2 plots that will give us an idea of how both versions of <code>gix blame</code> compare with respect to performance. Looking in particular at the boxplot, it seems that performance got better for files that are changed frequently, such as <code>CHANGELOG.md</code> and <code>README.md</code>.</p>
 </section>
 <section id="creating-a-boxplot" class="level2">
 <h2 class="anchored" data-anchor-id="creating-a-boxplot">Creating a boxplot</h2>
-<div id="bac00869" class="cell" data-execution_count="4">
+<div id="c2e1db62" class="cell" data-execution_count="4">
 <details class="code-fold">
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>FIGURE_WIDTH <span class="op">=</span> <span class="dv">8</span></span>
@@ -305,7 +305,7 @@ Note
 <span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 </div>
-<div id="d0376107" class="cell" data-execution_count="5">
+<div id="5f0f0108" class="cell" data-execution_count="5">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>boxplot <span class="op">=</span> sns.boxplot(x<span class="op">=</span><span class="st">"time"</span>, y<span class="op">=</span><span class="st">"path"</span>, hue<span class="op">=</span><span class="st">"command"</span>, data<span class="op">=</span>data)</span>
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>sns.despine(offset<span class="op">=</span><span class="dv">10</span>, trim<span class="op">=</span><span class="va">True</span>)</span>
 <span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>mpl.pyplot.tight_layout()</span>
@@ -321,7 +321,7 @@ Note
 </section>
 <section id="creating-a-stripplot" class="level2">
 <h2 class="anchored" data-anchor-id="creating-a-stripplot">Creating a stripplot</h2>
-<div id="c9b710ec" class="cell" data-execution_count="6">
+<div id="f61f972a" class="cell" data-execution_count="6">
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>mpl.pyplot.figure(figsize<span class="op">=</span>(FIGURE_WIDTH <span class="op">*</span> <span class="fl">0.75</span>, FIGURE_WIDTH <span class="op">/</span> FIGURE_ASPECT))</span>
 <span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>stripplot <span class="op">=</span> sns.stripplot(</span>
@@ -347,8 +347,8 @@ Note
 </section>
 <section id="conclusion" class="level2">
 <h2 class="anchored" data-anchor-id="conclusion">Conclusion</h2>
-<p>Aggregating the data in a table confirms the initial impression we got from both plots: in this sample, <code>gix-blame</code> seems to have gotten slightly slower across the board, with losses of more than 4 % in one case. I don’t know yet whether this is due to a particular change, and the effect is not dramatic, but I plan on investigating this more in-depth in the future if time permits.</p>
-<div id="f4bd9565" class="cell" data-execution_count="7">
+<p>It seems that the version using <code>imara-diff</code> 0.2 has a slight advantage over the version using <code>imara-diff</code> 0.1 when it comes to some of the files that have changed a lot over the course of <code>gitoxide</code>’s history, such as <code>CHANGELOG.md</code> or <code>README.md</code>. <code>Cargo.toml</code>, on the other hand, doesn’t fit that diagnosis. For files that changed less frequently, the situation is much closer, so I don’t want to draw too many conclusions.</p>
+<div id="50288e5e" class="cell" data-execution_count="7">
 <details class="code-fold">
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>summary <span class="op">=</span> (</span>
@@ -398,138 +398,146 @@ Note
 <span id="cb8-45"><a href="#cb8-45" aria-hidden="true" tabindex="-1"></a>    <span class="st">"ratio"</span>: table[<span class="st">"ratio"</span>].to_list(),</span>
 <span id="cb8-46"><a href="#cb8-46" aria-hidden="true" tabindex="-1"></a>})</span>
 <span id="cb8-47"><a href="#cb8-47" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-48"><a href="#cb8-48" aria-hidden="true" tabindex="-1"></a>display_table.style.<span class="bu">format</span>({</span>
-<span id="cb8-49"><a href="#cb8-49" aria-hidden="true" tabindex="-1"></a>    <span class="st">"Δ ms"</span>: <span class="st">"</span><span class="sc">{:+.2f}</span><span class="st">"</span>,</span>
-<span id="cb8-50"><a href="#cb8-50" aria-hidden="true" tabindex="-1"></a>    <span class="st">"Δ %"</span>: <span class="st">"</span><span class="sc">{:+.2f}</span><span class="st">%"</span>,</span>
-<span id="cb8-51"><a href="#cb8-51" aria-hidden="true" tabindex="-1"></a>    <span class="st">"ratio"</span>: <span class="st">"</span><span class="sc">{:.3f}</span><span class="st">×"</span>,</span>
-<span id="cb8-52"><a href="#cb8-52" aria-hidden="true" tabindex="-1"></a>}).background_gradient(</span>
-<span id="cb8-53"><a href="#cb8-53" aria-hidden="true" tabindex="-1"></a>    subset<span class="op">=</span>[<span class="st">"Δ %"</span>],</span>
-<span id="cb8-54"><a href="#cb8-54" aria-hidden="true" tabindex="-1"></a>    cmap<span class="op">=</span><span class="st">"Reds"</span>,</span>
-<span id="cb8-55"><a href="#cb8-55" aria-hidden="true" tabindex="-1"></a>).hide(axis<span class="op">=</span><span class="st">"index"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb8-48"><a href="#cb8-48" aria-hidden="true" tabindex="-1"></a>delta <span class="op">=</span> display_table[<span class="st">"Δ %"</span>]</span>
+<span id="cb8-49"><a href="#cb8-49" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-50"><a href="#cb8-50" aria-hidden="true" tabindex="-1"></a>worse_rows <span class="op">=</span> delta[delta <span class="op">&gt;</span> <span class="dv">0</span>].index</span>
+<span id="cb8-51"><a href="#cb8-51" aria-hidden="true" tabindex="-1"></a>better_rows <span class="op">=</span> delta[delta <span class="op">&lt;</span> <span class="dv">0</span>].index</span>
+<span id="cb8-52"><a href="#cb8-52" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-53"><a href="#cb8-53" aria-hidden="true" tabindex="-1"></a>display_table.style.<span class="bu">format</span>({</span>
+<span id="cb8-54"><a href="#cb8-54" aria-hidden="true" tabindex="-1"></a>    <span class="st">"Δ ms"</span>: <span class="st">"</span><span class="sc">{:+.2f}</span><span class="st">"</span>,</span>
+<span id="cb8-55"><a href="#cb8-55" aria-hidden="true" tabindex="-1"></a>    <span class="st">"Δ %"</span>: <span class="st">"</span><span class="sc">{:+.2f}</span><span class="st">%"</span>,</span>
+<span id="cb8-56"><a href="#cb8-56" aria-hidden="true" tabindex="-1"></a>    <span class="st">"ratio"</span>: <span class="st">"</span><span class="sc">{:.3f}</span><span class="st">×"</span>,</span>
+<span id="cb8-57"><a href="#cb8-57" aria-hidden="true" tabindex="-1"></a>}).background_gradient(</span>
+<span id="cb8-58"><a href="#cb8-58" aria-hidden="true" tabindex="-1"></a>    subset<span class="op">=</span>pd.IndexSlice[worse_rows, [<span class="st">"Δ %"</span>]],</span>
+<span id="cb8-59"><a href="#cb8-59" aria-hidden="true" tabindex="-1"></a>    cmap<span class="op">=</span><span class="st">"Reds"</span>,</span>
+<span id="cb8-60"><a href="#cb8-60" aria-hidden="true" tabindex="-1"></a>).background_gradient(</span>
+<span id="cb8-61"><a href="#cb8-61" aria-hidden="true" tabindex="-1"></a>    subset<span class="op">=</span>pd.IndexSlice[better_rows, [<span class="st">"Δ %"</span>]],</span>
+<span id="cb8-62"><a href="#cb8-62" aria-hidden="true" tabindex="-1"></a>    cmap<span class="op">=</span><span class="st">"Greens_r"</span>,</span>
+<span id="cb8-63"><a href="#cb8-63" aria-hidden="true" tabindex="-1"></a>).hide(axis<span class="op">=</span><span class="st">"index"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
-<div class="cell-output cell-output-display" data-execution_count="89">
+<div class="cell-output cell-output-display" data-execution_count="95">
 <style type="text/css">
-#T_4e39e_row0_col4 {
+#T_6cc2d_row0_col4 {
   background-color: #67000d;
   color: #f1f1f1;
 }
-#T_4e39e_row1_col4 {
-  background-color: #ee3a2c;
+#T_6cc2d_row1_col4 {
+  background-color: #d72322;
   color: #f1f1f1;
 }
-#T_4e39e_row2_col4 {
-  background-color: #fb7c5c;
+#T_6cc2d_row2_col4 {
+  background-color: #fb7858;
   color: #f1f1f1;
 }
-#T_4e39e_row3_col4 {
-  background-color: #fc8565;
-  color: #f1f1f1;
-}
-#T_4e39e_row4_col4 {
-  background-color: #fc8a6a;
-  color: #f1f1f1;
-}
-#T_4e39e_row5_col4 {
-  background-color: #fc8e6e;
+#T_6cc2d_row3_col4 {
+  background-color: #fee5d8;
   color: #000000;
 }
-#T_4e39e_row6_col4 {
-  background-color: #fc997a;
-  color: #000000;
-}
-#T_4e39e_row7_col4 {
-  background-color: #fcc4ad;
-  color: #000000;
-}
-#T_4e39e_row8_col4 {
+#T_6cc2d_row4_col4 {
   background-color: #fff5f0;
   color: #000000;
 }
+#T_6cc2d_row5_col4 {
+  background-color: #f7fcf5;
+  color: #000000;
+}
+#T_6cc2d_row6_col4 {
+  background-color: #d5efcf;
+  color: #000000;
+}
+#T_6cc2d_row7_col4 {
+  background-color: #84cc83;
+  color: #000000;
+}
+#T_6cc2d_row8_col4 {
+  background-color: #00441b;
+  color: #f1f1f1;
+}
 </style>
 
-<table id="T_4e39e" class="caption-top table table-sm table-striped small">
+<table id="T_6cc2d" class="caption-top table table-sm table-striped small">
 <thead>
 <tr class="header">
-<th id="T_4e39e_level0_col0" class="col_heading level0 col0" data-quarto-table-cell-role="th">path</th>
-<th id="T_4e39e_level0_col1" class="col_heading level0 col1" data-quarto-table-cell-role="th">baseline mean ± sd</th>
-<th id="T_4e39e_level0_col2" class="col_heading level0 col2" data-quarto-table-cell-role="th">comparison mean ± sd</th>
-<th id="T_4e39e_level0_col3" class="col_heading level0 col3" data-quarto-table-cell-role="th">Δ ms</th>
-<th id="T_4e39e_level0_col4" class="col_heading level0 col4" data-quarto-table-cell-role="th">Δ %</th>
-<th id="T_4e39e_level0_col5" class="col_heading level0 col5" data-quarto-table-cell-role="th">ratio</th>
+<th id="T_6cc2d_level0_col0" class="col_heading level0 col0" data-quarto-table-cell-role="th">path</th>
+<th id="T_6cc2d_level0_col1" class="col_heading level0 col1" data-quarto-table-cell-role="th">baseline mean ± sd</th>
+<th id="T_6cc2d_level0_col2" class="col_heading level0 col2" data-quarto-table-cell-role="th">comparison mean ± sd</th>
+<th id="T_6cc2d_level0_col3" class="col_heading level0 col3" data-quarto-table-cell-role="th">Δ ms</th>
+<th id="T_6cc2d_level0_col4" class="col_heading level0 col4" data-quarto-table-cell-role="th">Δ %</th>
+<th id="T_6cc2d_level0_col5" class="col_heading level0 col5" data-quarto-table-cell-role="th">ratio</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
-<td id="T_4e39e_row0_col0" class="data row0 col0">gix-odb/src/store_impls/loose/write.rs</td>
-<td id="T_4e39e_row0_col1" class="data row0 col1">70.75 ± 2.83</td>
-<td id="T_4e39e_row0_col2" class="data row0 col2">73.77 ± 2.42</td>
-<td id="T_4e39e_row0_col3" class="data row0 col3">+3.01</td>
-<td id="T_4e39e_row0_col4" class="data row0 col4">+4.26%</td>
-<td id="T_4e39e_row0_col5" class="data row0 col5">1.043×</td>
+<td id="T_6cc2d_row0_col0" class="data row0 col0">gix-object/src/lib.rs</td>
+<td id="T_6cc2d_row0_col1" class="data row0 col1">94.33 ± 2.62</td>
+<td id="T_6cc2d_row0_col2" class="data row0 col2">94.93 ± 2.32</td>
+<td id="T_6cc2d_row0_col3" class="data row0 col3">+0.59</td>
+<td id="T_6cc2d_row0_col4" class="data row0 col4">+0.63%</td>
+<td id="T_6cc2d_row0_col5" class="data row0 col5">1.006×</td>
 </tr>
 <tr class="even">
-<td id="T_4e39e_row1_col0" class="data row1 col0">gix-object/src/lib.rs</td>
-<td id="T_4e39e_row1_col1" class="data row1 col1">72.82 ± 2.04</td>
-<td id="T_4e39e_row1_col2" class="data row1 col2">75.00 ± 2.30</td>
-<td id="T_4e39e_row1_col3" class="data row1 col3">+2.17</td>
-<td id="T_4e39e_row1_col4" class="data row1 col4">+2.98%</td>
-<td id="T_4e39e_row1_col5" class="data row1 col5">1.030×</td>
+<td id="T_6cc2d_row1_col0" class="data row1 col0">gix-odb/src/store_impls/loose/write.rs</td>
+<td id="T_6cc2d_row1_col1" class="data row1 col1">93.75 ± 2.27</td>
+<td id="T_6cc2d_row1_col2" class="data row1 col2">94.22 ± 2.30</td>
+<td id="T_6cc2d_row1_col3" class="data row1 col3">+0.46</td>
+<td id="T_6cc2d_row1_col4" class="data row1 col4">+0.50%</td>
+<td id="T_6cc2d_row1_col5" class="data row1 col5">1.005×</td>
 </tr>
 <tr class="odd">
-<td id="T_4e39e_row2_col0" class="data row2 col0">STABILITY.md</td>
-<td id="T_4e39e_row2_col1" class="data row2 col1">47.24 ± 1.28</td>
-<td id="T_4e39e_row2_col2" class="data row2 col2">48.36 ± 1.82</td>
-<td id="T_4e39e_row2_col3" class="data row2 col3">+1.11</td>
-<td id="T_4e39e_row2_col4" class="data row2 col4">+2.36%</td>
-<td id="T_4e39e_row2_col5" class="data row2 col5">1.024×</td>
+<td id="T_6cc2d_row2_col0" class="data row2 col0">Cargo.toml</td>
+<td id="T_6cc2d_row2_col1" class="data row2 col1">102.49 ± 1.87</td>
+<td id="T_6cc2d_row2_col2" class="data row2 col2">102.87 ± 2.39</td>
+<td id="T_6cc2d_row2_col3" class="data row2 col3">+0.39</td>
+<td id="T_6cc2d_row2_col4" class="data row2 col4">+0.38%</td>
+<td id="T_6cc2d_row2_col5" class="data row2 col5">1.004×</td>
 </tr>
 <tr class="even">
-<td id="T_4e39e_row3_col0" class="data row3 col0">gix-index/tests/index/file/write.rs</td>
-<td id="T_4e39e_row3_col1" class="data row3 col1">46.26 ± 1.69</td>
-<td id="T_4e39e_row3_col2" class="data row3 col2">47.31 ± 1.47</td>
-<td id="T_4e39e_row3_col3" class="data row3 col3">+1.05</td>
-<td id="T_4e39e_row3_col4" class="data row3 col4">+2.26%</td>
-<td id="T_4e39e_row3_col5" class="data row3 col5">1.023×</td>
+<td id="T_6cc2d_row3_col0" class="data row3 col0">gix-index/tests/index/file/write.rs</td>
+<td id="T_6cc2d_row3_col1" class="data row3 col1">69.46 ± 2.11</td>
+<td id="T_6cc2d_row3_col2" class="data row3 col2">69.61 ± 1.88</td>
+<td id="T_6cc2d_row3_col3" class="data row3 col3">+0.15</td>
+<td id="T_6cc2d_row3_col4" class="data row3 col4">+0.21%</td>
+<td id="T_6cc2d_row3_col5" class="data row3 col5">1.002×</td>
 </tr>
 <tr class="odd">
-<td id="T_4e39e_row4_col0" class="data row4 col0">gix-blame/src/file/function.rs</td>
-<td id="T_4e39e_row4_col1" class="data row4 col1">31.33 ± 1.29</td>
-<td id="T_4e39e_row4_col2" class="data row4 col2">32.02 ± 1.20</td>
-<td id="T_4e39e_row4_col3" class="data row4 col3">+0.69</td>
-<td id="T_4e39e_row4_col4" class="data row4 col4">+2.21%</td>
-<td id="T_4e39e_row4_col5" class="data row4 col5">1.022×</td>
+<td id="T_6cc2d_row4_col0" class="data row4 col0">gix-path/src/env/mod.rs</td>
+<td id="T_6cc2d_row4_col1" class="data row4 col1">49.05 ± 1.76</td>
+<td id="T_6cc2d_row4_col2" class="data row4 col2">49.13 ± 1.57</td>
+<td id="T_6cc2d_row4_col3" class="data row4 col3">+0.08</td>
+<td id="T_6cc2d_row4_col4" class="data row4 col4">+0.17%</td>
+<td id="T_6cc2d_row4_col5" class="data row4 col5">1.002×</td>
 </tr>
 <tr class="even">
-<td id="T_4e39e_row5_col0" class="data row5 col0">CHANGELOG.md</td>
-<td id="T_4e39e_row5_col1" class="data row5 col1">137.27 ± 2.21</td>
-<td id="T_4e39e_row5_col2" class="data row5 col2">140.25 ± 2.75</td>
-<td id="T_4e39e_row5_col3" class="data row5 col3">+2.98</td>
-<td id="T_4e39e_row5_col4" class="data row5 col4">+2.17%</td>
-<td id="T_4e39e_row5_col5" class="data row5 col5">1.022×</td>
+<td id="T_6cc2d_row5_col0" class="data row5 col0">gix-blame/src/file/function.rs</td>
+<td id="T_6cc2d_row5_col1" class="data row5 col1">48.02 ± 1.39</td>
+<td id="T_6cc2d_row5_col2" class="data row5 col2">47.88 ± 1.80</td>
+<td id="T_6cc2d_row5_col3" class="data row5 col3">-0.13</td>
+<td id="T_6cc2d_row5_col4" class="data row5 col4">-0.28%</td>
+<td id="T_6cc2d_row5_col5" class="data row5 col5">0.997×</td>
 </tr>
 <tr class="odd">
-<td id="T_4e39e_row6_col0" class="data row6 col0">Cargo.toml</td>
-<td id="T_4e39e_row6_col1" class="data row6 col1">87.97 ± 2.54</td>
-<td id="T_4e39e_row6_col2" class="data row6 col2">89.78 ± 3.02</td>
-<td id="T_4e39e_row6_col3" class="data row6 col3">+1.80</td>
-<td id="T_4e39e_row6_col4" class="data row6 col4">+2.05%</td>
-<td id="T_4e39e_row6_col5" class="data row6 col5">1.020×</td>
+<td id="T_6cc2d_row6_col0" class="data row6 col0">STABILITY.md</td>
+<td id="T_6cc2d_row6_col1" class="data row6 col1">53.76 ± 1.81</td>
+<td id="T_6cc2d_row6_col2" class="data row6 col2">53.09 ± 1.93</td>
+<td id="T_6cc2d_row6_col3" class="data row6 col3">-0.66</td>
+<td id="T_6cc2d_row6_col4" class="data row6 col4">-1.24%</td>
+<td id="T_6cc2d_row6_col5" class="data row6 col5">0.988×</td>
 </tr>
 <tr class="even">
-<td id="T_4e39e_row7_col0" class="data row7 col0">gix-path/src/env/mod.rs</td>
-<td id="T_4e39e_row7_col1" class="data row7 col1">33.30 ± 1.59</td>
-<td id="T_4e39e_row7_col2" class="data row7 col2">33.83 ± 1.44</td>
-<td id="T_4e39e_row7_col3" class="data row7 col3">+0.53</td>
-<td id="T_4e39e_row7_col4" class="data row7 col4">+1.60%</td>
-<td id="T_4e39e_row7_col5" class="data row7 col5">1.016×</td>
+<td id="T_6cc2d_row7_col0" class="data row7 col0">README.md</td>
+<td id="T_6cc2d_row7_col1" class="data row7 col1">113.28 ± 2.89</td>
+<td id="T_6cc2d_row7_col2" class="data row7 col2">110.43 ± 3.14</td>
+<td id="T_6cc2d_row7_col3" class="data row7 col3">-2.85</td>
+<td id="T_6cc2d_row7_col4" class="data row7 col4">-2.52%</td>
+<td id="T_6cc2d_row7_col5" class="data row7 col5">0.975×</td>
 </tr>
 <tr class="odd">
-<td id="T_4e39e_row8_col0" class="data row8 col0">README.md</td>
-<td id="T_4e39e_row8_col1" class="data row8 col1">99.88 ± 2.30</td>
-<td id="T_4e39e_row8_col2" class="data row8 col2">100.73 ± 1.79</td>
-<td id="T_4e39e_row8_col3" class="data row8 col3">+0.84</td>
-<td id="T_4e39e_row8_col4" class="data row8 col4">+0.84%</td>
-<td id="T_4e39e_row8_col5" class="data row8 col5">1.008×</td>
+<td id="T_6cc2d_row8_col0" class="data row8 col0">CHANGELOG.md</td>
+<td id="T_6cc2d_row8_col1" class="data row8 col1">158.94 ± 3.23</td>
+<td id="T_6cc2d_row8_col2" class="data row8 col2">150.66 ± 3.58</td>
+<td id="T_6cc2d_row8_col3" class="data row8 col3">-8.28</td>
+<td id="T_6cc2d_row8_col4" class="data row8 col4">-5.21%</td>
+<td id="T_6cc2d_row8_col5" class="data row8 col5">0.948×</td>
 </tr>
 </tbody>
 </table>

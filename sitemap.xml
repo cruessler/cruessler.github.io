@@ -2,14 +2,22 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://cruessler.github.io/index.html</loc>
-    <lastmod>2026-07-20T20:25:27.944Z</lastmod>
+    <lastmod>2026-08-10T18:01:47.720Z</lastmod>
   </url>
   <url>
     <loc>https://cruessler.github.io/posts/gix-blame-march-2026-through-july-2026/index.html</loc>
-    <lastmod>2026-07-20T20:25:27.945Z</lastmod>
+    <lastmod>2026-08-10T18:01:47.721Z</lastmod>
   </url>
   <url>
     <loc>https://cruessler.github.io/about.html</loc>
-    <lastmod>2026-07-20T20:25:27.944Z</lastmod>
+    <lastmod>2026-08-10T18:01:47.720Z</lastmod>
+  </url>
+  <url>
+    <loc>https://cruessler.github.io/posts/gix-blame-performance-improved-by-a-change-in-gix-diff/index.html</loc>
+    <lastmod>2026-08-10T18:01:47.722Z</lastmod>
+  </url>
+  <url>
+    <loc>https://cruessler.github.io/posts/gix-blame-performance-with-imara-diff-0-1-and-0-2/index.html</loc>
+    <lastmod>2026-08-10T18:01:47.722Z</lastmod>
   </url>
 </urlset>
