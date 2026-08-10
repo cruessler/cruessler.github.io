@@ -1,9 +1,17 @@
 ---
-title: "gix-blame performance March 2026 through July 2026"
+title: "`gix-blame` performance March 2026 through July 2026"
 author: "Christoph Rüßler"
 date: "2026-07-19"
+date-modified: "2026-08-10"
 categories: [code, analysis]
 ---
+
+::: {.callout-note}
+If you’re wondering why there’s earlier posts in this blog even though the
+first paragraph mentions this is the first post: the other, earlier posts were
+published on my main blog before this blog existed and then later imported with
+their original publication date.
+:::
 
 This is the first post in a new blog in which I plan to infrequently post
 performance analyses related to [`gitoxide`][gitoxide]. This post is largely a
@@ -75,7 +83,7 @@ for i, path in enumerate(
 This will create a couple of Markdown files, `benchmark-1.json` through
 `benchmark-9.json`.
 
-## Analyzing the data
+## Loading the data
 
 Then, in order to work with these files, we’re going to use `numpy` and
 `pandas` to load them into `data`.
@@ -118,9 +126,7 @@ data = pd.concat(
 And finally, we’re going to create 2 plots that will give us an idea of how
 both versions of `gix blame` compare with respect to performance. Looking in
 particular at the boxplot, it seems that performance slightly regressed between
-March and July. I don’t know yet whether this is due to a particular change,
-and the effect is really small, so I’m not sure yet whether I’m going to
-investigate this in depth.
+March and July.
 
 ## Creating a boxplot
 
@@ -160,4 +166,72 @@ stripplot = sns.stripplot(
 )
 
 mpl.pyplot.show()
+```
+
+## Conclusion
+
+Aggregating the data in a table confirms the initial impression we got from
+both plots: in this sample, `gix-blame` seems to have gotten slightly slower
+across the board, with losses of more than 4 % in one case. I don’t know yet
+whether this is due to a particular change, and the effect is not dramatic, but
+I plan on investigating this more in-depth in the future if time permits.
+
+```{python}
+#| code-fold: true
+
+summary = (
+    data
+    .groupby(["path", "command"])
+    .agg(
+        mean=("time", "mean"),
+        stddev=("time", "std"),
+    )
+    .reset_index()
+)
+
+summary["mean_ms"] = summary["mean"] * 1000
+summary["stddev_ms"] = summary["stddev"] * 1000
+
+wide = summary.pivot(
+    index="path",
+    columns="command",
+    values=["mean_ms", "stddev_ms"],
+)
+
+table = pd.DataFrame({
+    "baseline_mean_ms": wide["mean_ms"]["baseline"],
+    "baseline_stddev_ms": wide["stddev_ms"]["baseline"],
+    "comparison_mean_ms": wide["mean_ms"]["comparison"],
+    "comparison_stddev_ms": wide["stddev_ms"]["comparison"],
+})
+
+table["Δ ms"] = table["comparison_mean_ms"] - table["baseline_mean_ms"]
+table["Δ %"] = table["Δ ms"] / table["baseline_mean_ms"] * 100
+table["ratio"] = table["comparison_mean_ms"] / table["baseline_mean_ms"]
+
+table = table.sort_values("Δ %", ascending=False)
+
+display_table = pd.DataFrame({
+    "path": table.index.to_list(),
+    "baseline mean ± sd": [
+        f"{mean:.2f} ± {sd:.2f}"
+        for mean, sd in zip(table["baseline_mean_ms"], table["baseline_stddev_ms"])
+    ],
+    "comparison mean ± sd": [
+        f"{mean:.2f} ± {sd:.2f}"
+        for mean, sd in zip(table["comparison_mean_ms"], table["comparison_stddev_ms"])
+    ],
+    "Δ ms": table["Δ ms"].to_list(),
+    "Δ %": table["Δ %"].to_list(),
+    "ratio": table["ratio"].to_list(),
+})
+
+display_table.style.format({
+    "Δ ms": "{:+.2f}",
+    "Δ %": "{:+.2f}%",
+    "ratio": "{:.3f}×",
+}).background_gradient(
+    subset=["Δ %"],
+    cmap="Reds",
+).hide(axis="index")
 ```
