@@ -9,6 +9,6 @@ about:
 ---
 
 I created this blog as a place to infrequently post performance analyses of
-[`gitoxide`][gitoxide]. My main blog lives at https://c.rubler.net/blog.
+[`gitoxide`][gitoxide]. My main blog lives at <https://c.rubler.net/blog>.
 
 [gitoxide]: https://github.com/GitoxideLabs/gitoxide.git
