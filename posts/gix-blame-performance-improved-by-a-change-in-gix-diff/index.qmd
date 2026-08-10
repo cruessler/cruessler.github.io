@@ -1,0 +1,232 @@
+---
+title: "`gix-blame` performance improved by a change in `gix-diff`"
+author: "Christoph Rüßler"
+date: "2026-03-14"
+date-modified: "2026-08-10"
+categories: [code, analysis]
+---
+
+::: {.callout-note}
+This post is a modernized version of an [earlier
+post][skip-identical-subtree-diff] of mine in my main blog.
+
+This post’s “published” date reflects the date the original post was published.
+:::
+
+[skip-identical-subtree-diff]: https://c.rubler.net/blog/2026/03/14/gix-blame-performance-improved-by-a-change-in-gix-diff.html
+
+In February 2026, we got a [PR in `gitoxide`][pr-2438] that substantially
+improved `gix-diff`’s tree diff performance. Since `gix-blame`’s algorithm uses
+a lot of tree diffs under the hood, I wanted to know what the impact on
+`gix-blame`’s performance was.
+
+I set up a benchmark using `hyperfine`, and the results are quite impressive:
+speedups of more than 20 % in some scenarios, with no noticeable performance
+degradation in any of the scenarios I included. From what I can tell, the
+speedup depends on the directory depth at which the blamed file lives. This is
+plausible because nested tree diffs are more expensive than flat ones.
+
+[pr-2438]: https://github.com/GitoxideLabs/gitoxide/pull/2438
+
+## Running the benchmark
+
+The comparison was run between [this commit that contained the
+optimization][commit-e63d487fb] and [its parent][commit-29040a827]. After
+compiling both executables with `cargo build --release --locked`, I ran the
+following script to collect some data using `hyperfine`.
+
+[commit-e63d487fb]: https://github.com/GitoxideLabs/gitoxide/commit/e63d487fb1b1425a9458fc7400517ad2c0280fd2
+[commit-29040a827]: https://github.com/GitoxideLabs/gitoxide/commit/29040a8277735cbc9fcd0d80626c75d710d3da2a
+
+```bash
+env GIT_DIR="$HOME/github/Byron/gitoxide/.git" BASELINE_EXECUTABLE="$HOME/bin/gix-blame-2026-03-08-29040a827" COMPARISON_EXECUTABLE="$HOME/bin/gix-blame-2026-03-08-e63d487fb" ./run_benchmark.py
+```
+
+```{python}
+#| eval: false
+#| code-fold: true
+#| code-summary: "`run_benchmark.py`, the script used to benchmark both versions of `gix blame`"
+
+#!/usr/bin/env python
+# /// script
+# requires-python = ">=3.13"
+# ///
+
+import os
+
+def run(path, i):
+    os.system(
+        f'hyperfine --parameter-list command "$BASELINE_EXECUTABLE","$COMPARISON_EXECUTABLE" --parameter-list path {path} "{{command}} blame {{path}}" --command-name baseline --command-name comparison --export-json benchmark-{i}.json'
+    )
+
+for i, path in enumerate(
+    [
+        "CHANGELOG.md",
+        "STABILITY.md",
+        "README.md",
+        "Cargo.toml",
+        "gix-blame/src/file/function.rs",
+        "gix-path/src/env/mod.rs",
+        "gix-index/tests/index/file/write.rs",
+        "gix-object/src/lib.rs",
+        "gix-odb/src/store_impls/loose/write.rs",
+    ]
+):
+    run(path, i + 1)
+```
+
+This will create a couple of Markdown files, `benchmark-1.json` through
+`benchmark-9.json`.
+
+## Loading the data
+
+Then, in order to work with these files, we’re going to use `numpy` and
+`pandas` to load them into `data`.
+
+```{python}
+#| code-fold: true
+#| code-summary: A few helper functions for loading the data
+
+import numpy as np
+import pandas as pd
+
+import matplotlib as mpl
+
+import seaborn as sns
+
+import json
+
+def load_results(filename):
+    with open(filename) as f:
+        return json.load(f)["results"]
+
+def extract_data_points(result):
+    command = result["command"]
+    path = result["parameters"]["path"]
+
+    return {"command": command, "path": path, "time": result["times"]}
+```
+
+```{python}
+filenames = [f"benchmark-{i}.json" for i in range(1, 10)]
+results = [load_results(filename) for filename in filenames]
+results = [extract_data_points(result) for result in np.concatenate(results)]
+
+data = pd.concat(
+    [pd.DataFrame(result) for result in results],
+    ignore_index=True,
+)
+```
+
+And finally, we’re going to create 2 plots that will give us an idea of how
+both versions of `gix blame` compare with respect to performance. In both
+plots, there’s a clearly visible speedup associated with the change. It’s also
+clearly visible that the speedup is much more pronounced for files nested a few
+directories deep.
+
+## Creating a boxplot
+
+```{python}
+#| code-fold: true
+
+FIGURE_WIDTH = 8
+FIGURE_ASPECT = 1.6
+
+sns.set_theme(
+    palette="Paired",
+    rc={"figure.figsize": (FIGURE_WIDTH, FIGURE_WIDTH / FIGURE_ASPECT)},
+)
+```
+
+```{python}
+boxplot = sns.boxplot(x="time", y="path", hue="command", data=data)
+sns.despine(offset=10, trim=True)
+mpl.pyplot.tight_layout()
+mpl.pyplot.show()
+```
+
+## Creating a stripplot
+
+```{python}
+mpl.pyplot.figure(figsize=(FIGURE_WIDTH * 0.75, FIGURE_WIDTH / FIGURE_ASPECT))
+
+stripplot = sns.stripplot(
+    x="time",
+    y="path",
+    hue="command",
+    dodge=True,
+    size=2.5,
+    jitter=0.2,
+    legend=False,
+    data=data,
+)
+
+mpl.pyplot.show()
+```
+
+## Conclusion
+
+The aggregated data confirm the visual impression: for files in the
+repository’s root directory, there’s only a small performance improvement, but
+for deeper hierarchies, there’s large improvements of more than 20 % in some
+cases.
+
+```{python}
+#| code-fold: true
+
+summary = (
+    data
+    .groupby(["path", "command"])
+    .agg(
+        mean=("time", "mean"),
+        stddev=("time", "std"),
+    )
+    .reset_index()
+)
+
+summary["mean_ms"] = summary["mean"] * 1000
+summary["stddev_ms"] = summary["stddev"] * 1000
+
+wide = summary.pivot(
+    index="path",
+    columns="command",
+    values=["mean_ms", "stddev_ms"],
+)
+
+table = pd.DataFrame({
+    "baseline_mean_ms": wide["mean_ms"]["baseline"],
+    "baseline_stddev_ms": wide["stddev_ms"]["baseline"],
+    "comparison_mean_ms": wide["mean_ms"]["comparison"],
+    "comparison_stddev_ms": wide["stddev_ms"]["comparison"],
+})
+
+table["Δ ms"] = table["comparison_mean_ms"] - table["baseline_mean_ms"]
+table["Δ %"] = table["Δ ms"] / table["baseline_mean_ms"] * 100
+table["ratio"] = table["comparison_mean_ms"] / table["baseline_mean_ms"]
+
+table = table.sort_values("Δ %", ascending=False)
+
+display_table = pd.DataFrame({
+    "path": table.index.to_list(),
+    "baseline mean ± sd": [
+        f"{mean:.2f} ± {sd:.2f}"
+        for mean, sd in zip(table["baseline_mean_ms"], table["baseline_stddev_ms"])
+    ],
+    "comparison mean ± sd": [
+        f"{mean:.2f} ± {sd:.2f}"
+        for mean, sd in zip(table["comparison_mean_ms"], table["comparison_stddev_ms"])
+    ],
+    "Δ ms": table["Δ ms"].to_list(),
+    "Δ %": table["Δ %"].to_list(),
+    "ratio": table["ratio"].to_list(),
+})
+
+display_table.style.format({
+    "Δ ms": "{:+.2f}",
+    "Δ %": "{:+.2f}%",
+    "ratio": "{:.3f}×",
+}).background_gradient(
+    subset=["Δ %"],
+    cmap="Greens_r",
+).hide(axis="index")
+```
