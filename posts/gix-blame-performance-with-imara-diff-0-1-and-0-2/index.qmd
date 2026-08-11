@@ -128,10 +128,41 @@ sns.set_theme(
     palette="Paired",
     rc={"figure.figsize": (FIGURE_WIDTH, FIGURE_WIDTH / FIGURE_ASPECT)},
 )
-```
 
-```{python}
-boxplot = sns.boxplot(x="time", y="path", hue="command", data=data)
+baseline_time = (
+    data[data["command"] == "baseline"]
+    .groupby("path")["time"]
+    .median()
+    .rename("baseline_time")
+)
+
+normalized_data = data.join(baseline_time, on="path")
+
+normalized_data["change_pct"] = (
+    normalized_data["time"] / normalized_data["baseline_time"] - 1
+) * 100
+
+path_order = (
+    normalized_data[normalized_data["command"] == "comparison"]
+    .groupby("path")["change_pct"]
+    .median()
+    .sort_values(ascending=False)
+    .index
+)
+
+boxplot = sns.boxplot(
+    x="change_pct",
+    y="path",
+    hue="command",
+    order=path_order,
+    data=normalized_data,
+    width=0.5,
+)
+
+boxplot.axvline(0, color="0.4", linestyle="--", linewidth=1)
+boxplot.set_xlabel("runtime change relative to baseline median")
+boxplot.xaxis.set_major_formatter(mpl.ticker.PercentFormatter(xmax=100))
+
 sns.despine(offset=10, trim=True)
 mpl.pyplot.tight_layout()
 mpl.pyplot.show()
@@ -149,7 +180,6 @@ stripplot = sns.stripplot(
     dodge=True,
     size=2.5,
     jitter=0.2,
-    legend=False,
     data=data,
 )
 
@@ -196,7 +226,6 @@ table = pd.DataFrame({
 
 table["Δ ms"] = table["comparison_mean_ms"] - table["baseline_mean_ms"]
 table["Δ %"] = table["Δ ms"] / table["baseline_mean_ms"] * 100
-table["ratio"] = table["comparison_mean_ms"] / table["baseline_mean_ms"]
 
 table = table.sort_values("Δ %", ascending=False)
 
@@ -212,7 +241,6 @@ display_table = pd.DataFrame({
     ],
     "Δ ms": table["Δ ms"].to_list(),
     "Δ %": table["Δ %"].to_list(),
-    "ratio": table["ratio"].to_list(),
 })
 
 delta = display_table["Δ %"]
@@ -223,7 +251,6 @@ better_rows = delta[delta < 0].index
 display_table.style.format({
     "Δ ms": "{:+.2f}",
     "Δ %": "{:+.2f}%",
-    "ratio": "{:.3f}×",
 }).background_gradient(
     subset=pd.IndexSlice[worse_rows, ["Δ %"]],
     cmap="Reds",
